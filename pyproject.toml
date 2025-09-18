@@ -1,0 +1,2 @@
+[tool.smithery]
+server = "my_server.mcp_server:create_server"
