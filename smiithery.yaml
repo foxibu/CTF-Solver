@@ -1,0 +1,36 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => {
+      const args = [
+        "mcp_server.py",
+        "--server", config.server,
+        "--timeout", String(config.timeout)
+      ];
+      if (config.debug) args.push("--debug");
+      return {command: "python3", args, env: {}};
+    }
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    properties:
+      server:
+        type: string
+        default: http://localhost:5000
+        description: Kali Tools API server URL
+      timeout:
+        type: number
+        default: 300
+        description: Request timeout in seconds
+      debug:
+        type: boolean
+        default: false
+        description: Enable debug logging
+  exampleConfig:
+    server: http://localhost:5000
+    timeout: 300
+    debug: false
