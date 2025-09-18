@@ -3,7 +3,7 @@ requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
 
 [project]
-name = "kali_mcp_server"
+name = "my_server"
 version = "0.1.0"
 description = "My MCP server"
 readme = "README.md"
