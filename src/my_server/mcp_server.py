@@ -372,6 +372,42 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
 
     return mcp
 
+def create_server() -> FastMCP:
+    """
+    Factory function for Smithery deployment.
+    Reads configuration from environment variables.
+
+    Returns:
+        Configured FastMCP instance
+    """
+    # Read configuration from environment variables
+    server_url = os.environ.get("KALI_SERVER_URL", DEFAULT_KALI_SERVER)
+    timeout = int(os.environ.get("KALI_REQUEST_TIMEOUT", str(DEFAULT_REQUEST_TIMEOUT)))
+
+    logger.info(f"Creating Kali MCP server (Smithery mode)")
+    logger.info(f"Kali API server: {server_url}")
+    logger.info(f"Request timeout: {timeout}s")
+
+    # Initialize the Kali Tools client
+    kali_client = KaliToolsClient(server_url, timeout)
+
+    # Check server health and log the result
+    health = kali_client.check_health()
+    if "error" in health:
+        logger.warning(f"Unable to connect to Kali API server at {server_url}: {health['error']}")
+        logger.warning("MCP server will start, but tool execution may fail")
+    else:
+        logger.info(f"Successfully connected to Kali API server")
+        logger.info(f"Server health status: {health['status']}")
+        if not health.get("all_essential_tools_available", False):
+            logger.warning("Not all essential tools are available on the Kali server")
+            missing_tools = [tool for tool, available in health.get("tools_status", {}).items() if not available]
+            if missing_tools:
+                logger.warning(f"Missing tools: {', '.join(missing_tools)}")
+
+    # Set up and return the MCP server
+    return setup_mcp_server(kali_client)
+
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Run the Kali MCP Client")
