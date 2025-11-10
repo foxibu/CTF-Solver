@@ -8,7 +8,7 @@ import sys
 import os
 import argparse
 import logging
-from typing import Dict, Any, Optional, Annotated
+from typing import Dict, Any, Optional
 import requests
 
 from mcp.server.fastmcp import FastMCP
@@ -134,13 +134,19 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": True
     })
     def nmap_scan(
-        target: Annotated[str, "Target IP address or hostname to scan (e.g., '192.168.1.1' or 'example.com')"],
-        scan_type: Annotated[str, "Nmap scan type: -sV (version detection), -sS (SYN scan), -sT (TCP connect), -sU (UDP scan), -A (aggressive scan)"] = "-sV",
-        ports: Annotated[str, "Ports to scan: single port '80', range '1-1000', list '22,80,443', or empty for default"] = "",
-        additional_args: Annotated[str, "Additional Nmap arguments (e.g., '-O' for OS detection, '--script vuln' for vulnerability scripts)"] = ""
+        target: str,
+        scan_type: str = "-sV",
+        ports: str = "",
+        additional_args: str = ""
     ) -> Dict[str, Any]:
         """
         Execute an Nmap network scan to discover hosts, open ports, services, and versions.
+
+        Args:
+            target: Target IP address or hostname to scan (e.g., '192.168.1.1' or 'example.com')
+            scan_type: Nmap scan type - use '-sV' for version detection, '-sS' for SYN scan, '-sT' for TCP connect, '-sU' for UDP scan, or '-A' for aggressive scan (default: '-sV')
+            ports: Ports to scan - can be single port '80', range '1-1000', comma-separated list '22,80,443', or empty for default ports (default: '')
+            additional_args: Additional Nmap arguments like '-O' for OS detection or '--script vuln' for vulnerability scripts (default: '')
 
         Returns:
             Scan results including discovered ports, services, and version information
@@ -159,13 +165,19 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": True
     })
     def gobuster_scan(
-        url: Annotated[str, "Target URL (http://example.com) or domain for DNS mode"],
-        mode: Annotated[str, "Scan mode: 'dir' (directory bruteforce), 'dns' (subdomain enumeration), 'vhost' (virtual host discovery), 'fuzz' (fuzzing)"] = "dir",
-        wordlist: Annotated[str, "Path to wordlist file on Kali server (default: /usr/share/wordlists/dirb/common.txt)"] = "/usr/share/wordlists/dirb/common.txt",
-        additional_args: Annotated[str, "Additional Gobuster arguments (e.g., '-x php,html' for extensions, '-t 50' for threads)"] = ""
+        url: str,
+        mode: str = "dir",
+        wordlist: str = "/usr/share/wordlists/dirb/common.txt",
+        additional_args: str = ""
     ) -> Dict[str, Any]:
         """
         Execute Gobuster directory/DNS/vhost enumeration to discover hidden paths, subdomains, or virtual hosts.
+
+        Args:
+            url: Target URL (http://example.com) or domain for DNS mode
+            mode: Scan mode - 'dir' for directory bruteforce, 'dns' for subdomain enumeration, 'vhost' for virtual host discovery, or 'fuzz' for fuzzing (default: 'dir')
+            wordlist: Path to wordlist file on Kali server (default: '/usr/share/wordlists/dirb/common.txt')
+            additional_args: Additional Gobuster arguments like '-x php,html' for file extensions or '-t 50' for thread count (default: '')
 
         Returns:
             Discovered directories, subdomains, or virtual hosts with response codes
@@ -184,12 +196,17 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": True
     })
     def dirb_scan(
-        url: Annotated[str, "Target URL to scan (e.g., http://example.com)"],
-        wordlist: Annotated[str, "Path to wordlist file on Kali server (default: /usr/share/wordlists/dirb/common.txt)"] = "/usr/share/wordlists/dirb/common.txt",
-        additional_args: Annotated[str, "Additional Dirb arguments (e.g., '-r' for non-recursive, '-z 10' for millisecond delay)"] = ""
+        url: str,
+        wordlist: str = "/usr/share/wordlists/dirb/common.txt",
+        additional_args: str = ""
     ) -> Dict[str, Any]:
         """
         Execute Dirb web content scanner to discover hidden directories and files through dictionary-based attacks.
+
+        Args:
+            url: Target URL to scan (e.g., http://example.com)
+            wordlist: Path to wordlist file on Kali server (default: '/usr/share/wordlists/dirb/common.txt')
+            additional_args: Additional Dirb arguments like '-r' for non-recursive or '-z 10' for millisecond delay (default: '')
 
         Returns:
             Discovered directories and files with HTTP response codes
@@ -207,11 +224,15 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": True
     })
     def nikto_scan(
-        target: Annotated[str, "Target URL or IP address to scan (e.g., 'http://example.com' or '192.168.1.1')"],
-        additional_args: Annotated[str, "Additional Nikto arguments (e.g., '-Tuning x' for specific tests, '-port 8080' for custom port)"] = ""
+        target: str,
+        additional_args: str = ""
     ) -> Dict[str, Any]:
         """
         Execute Nikto web server vulnerability scanner to identify server misconfigurations, outdated software, and security issues.
+
+        Args:
+            target: Target URL or IP address to scan (e.g., 'http://example.com' or '192.168.1.1')
+            additional_args: Additional Nikto arguments like '-Tuning x' for specific test types or '-port 8080' for custom port (default: '')
 
         Returns:
             Vulnerability findings, server information, and security recommendations
@@ -228,12 +249,17 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": False
     })
     def sqlmap_scan(
-        url: Annotated[str, "Target URL to test for SQL injection vulnerabilities (e.g., 'http://example.com/page.php?id=1')"],
-        data: Annotated[str, "POST data string for testing POST parameters (e.g., 'username=admin&password=test')"] = "",
-        additional_args: Annotated[str, "Additional SQLmap arguments (e.g., '--batch' for non-interactive, '--dbs' to enumerate databases, '--risk 3' for aggressive testing)"] = ""
+        url: str,
+        data: str = "",
+        additional_args: str = ""
     ) -> Dict[str, Any]:
         """
         Execute SQLmap automated SQL injection detection and exploitation tool. WARNING: Can modify database contents.
+
+        Args:
+            url: Target URL to test for SQL injection vulnerabilities (e.g., 'http://example.com/page.php?id=1')
+            data: POST data string for testing POST parameters (e.g., 'username=admin&password=test') (default: '')
+            additional_args: Additional SQLmap arguments like '--batch' for non-interactive mode, '--dbs' to enumerate databases, or '--risk 3' for aggressive testing (default: '')
 
         Returns:
             SQL injection vulnerabilities found, database information, and exploitation results
@@ -251,11 +277,15 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": False
     })
     def metasploit_run(
-        module: Annotated[str, "Metasploit module path (e.g., 'exploit/windows/smb/ms17_010_eternalblue' or 'auxiliary/scanner/portscan/tcp')"],
-        options: Annotated[Dict[str, Any], "Module options as key-value pairs (e.g., {'RHOSTS': '192.168.1.1', 'RPORT': 445})"] = {}
+        module: str,
+        options: Dict[str, Any] = {}
     ) -> Dict[str, Any]:
         """
         Execute a Metasploit Framework module for exploitation, scanning, or auxiliary functions. WARNING: Can compromise systems.
+
+        Args:
+            module: Metasploit module path (e.g., 'exploit/windows/smb/ms17_010_eternalblue' or 'auxiliary/scanner/portscan/tcp')
+            options: Module options as key-value pairs (e.g., {'RHOSTS': '192.168.1.1', 'RPORT': 445}) (default: {})
 
         Returns:
             Module execution results, including any exploited sessions or scan findings
@@ -272,16 +302,25 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": False
     })
     def hydra_attack(
-        target: Annotated[str, "Target IP address or hostname to attack (e.g., '192.168.1.1' or 'example.com')"],
-        service: Annotated[str, "Service to attack: 'ssh', 'ftp', 'http-post-form', 'rdp', 'smb', 'telnet', etc."],
-        username: Annotated[str, "Single username to test (leave empty if using username_file)"] = "",
-        username_file: Annotated[str, "Path to username wordlist file on Kali server (e.g., '/usr/share/wordlists/usernames.txt')"] = "",
-        password: Annotated[str, "Single password to test (leave empty if using password_file)"] = "",
-        password_file: Annotated[str, "Path to password wordlist file on Kali server (e.g., '/usr/share/wordlists/rockyou.txt')"] = "",
-        additional_args: Annotated[str, "Additional Hydra arguments (e.g., '-t 4' for threads, '-V' for verbose)"] = ""
+        target: str,
+        service: str,
+        username: str = "",
+        username_file: str = "",
+        password: str = "",
+        password_file: str = "",
+        additional_args: str = ""
     ) -> Dict[str, Any]:
         """
         Execute Hydra online password cracking tool for authentication brute-forcing. WARNING: May lock accounts or trigger security alerts.
+
+        Args:
+            target: Target IP address or hostname to attack (e.g., '192.168.1.1' or 'example.com')
+            service: Service to attack - supports 'ssh', 'ftp', 'http-post-form', 'rdp', 'smb', 'telnet', etc.
+            username: Single username to test (leave empty if using username_file) (default: '')
+            username_file: Path to username wordlist file on Kali server (e.g., '/usr/share/wordlists/usernames.txt') (default: '')
+            password: Single password to test (leave empty if using password_file) (default: '')
+            password_file: Path to password wordlist file on Kali server (e.g., '/usr/share/wordlists/rockyou.txt') (default: '')
+            additional_args: Additional Hydra arguments like '-t 4' for thread count or '-V' for verbose output (default: '')
 
         Returns:
             Successfully cracked credentials and attack statistics
@@ -303,13 +342,19 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": True
     })
     def john_crack(
-        hash_file: Annotated[str, "Path to file containing password hashes on Kali server (e.g., '/tmp/hashes.txt')"],
-        wordlist: Annotated[str, "Path to wordlist file on Kali server (default: /usr/share/wordlists/rockyou.txt)"] = "/usr/share/wordlists/rockyou.txt",
-        format_type: Annotated[str, "Hash format type (e.g., 'md5', 'sha256', 'NT', 'des', 'raw-md5' - auto-detect if empty)"] = "",
-        additional_args: Annotated[str, "Additional John arguments (e.g., '--rules' for mangling rules, '--show' to display cracked)"] = ""
+        hash_file: str,
+        wordlist: str = "/usr/share/wordlists/rockyou.txt",
+        format_type: str = "",
+        additional_args: str = ""
     ) -> Dict[str, Any]:
         """
         Execute John the Ripper offline password hash cracker using wordlist and rules-based attacks.
+
+        Args:
+            hash_file: Path to file containing password hashes on Kali server (e.g., '/tmp/hashes.txt')
+            wordlist: Path to wordlist file on Kali server (default: '/usr/share/wordlists/rockyou.txt')
+            format_type: Hash format type like 'md5', 'sha256', 'NT', 'des', 'raw-md5' - leave empty for auto-detection (default: '')
+            additional_args: Additional John arguments like '--rules' for mangling rules or '--show' to display previously cracked passwords (default: '')
 
         Returns:
             Cracked passwords, hash format information, and cracking statistics
@@ -328,11 +373,15 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": True
     })
     def wpscan_analyze(
-        url: Annotated[str, "Target WordPress site URL (e.g., 'http://example.com')"],
-        additional_args: Annotated[str, "Additional WPScan arguments (e.g., '--enumerate u,p,t' for users/plugins/themes, '--api-token TOKEN' for vulnerability data)"] = ""
+        url: str,
+        additional_args: str = ""
     ) -> Dict[str, Any]:
         """
         Execute WPScan WordPress security scanner to identify vulnerabilities, plugins, themes, and users.
+
+        Args:
+            url: Target WordPress site URL (e.g., 'http://example.com')
+            additional_args: Additional WPScan arguments like '--enumerate u,p,t' for enumerating users/plugins/themes or '--api-token TOKEN' for vulnerability data (default: '')
 
         Returns:
             WordPress version, installed plugins/themes, known vulnerabilities, and enumerated users
@@ -349,11 +398,15 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         "idempotentHint": True
     })
     def enum4linux_scan(
-        target: Annotated[str, "Target Windows/Samba host IP address or hostname (e.g., '192.168.1.10')"],
-        additional_args: Annotated[str, "Additional enum4linux arguments (default: '-a' for all enumeration, '-U' for users only, '-S' for shares only)"] = "-a"
+        target: str,
+        additional_args: str = "-a"
     ) -> Dict[str, Any]:
         """
         Execute Enum4linux tool to enumerate Windows/Samba systems for users, shares, groups, and OS information.
+
+        Args:
+            target: Target Windows/Samba host IP address or hostname (e.g., '192.168.1.10')
+            additional_args: Additional enum4linux arguments - use '-a' for all enumeration, '-U' for users only, or '-S' for shares only (default: '-a')
 
         Returns:
             Enumerated users, shares, groups, password policies, and system information
@@ -377,17 +430,20 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             Server status, available security tools, and system health information
         """
         return kali_client.check_health()
-    
+
     @mcp.tool(annotations={
         "readOnlyHint": False,
         "destructiveHint": True,
         "idempotentHint": False
     })
     def execute_command(
-        command: Annotated[str, "Shell command to execute on Kali server (e.g., 'whoami', 'ls -la /tmp'). WARNING: Can execute any command."]
+        command: str
     ) -> Dict[str, Any]:
         """
         Execute an arbitrary shell command on the Kali Linux server. WARNING: Unrestricted command execution - use with extreme caution.
+
+        Args:
+            command: Shell command to execute on Kali server (e.g., 'whoami' or 'ls -la /tmp'). WARNING: Can execute any command with server permissions.
 
         Returns:
             Command output (stdout/stderr), exit code, and execution status
