@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  ctf-solver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: foxibu/ctf-solver:latest
+    container_name: ctf-solver
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist session data
+      - ./sessions:/app/sessions
+      - ./workspaces:/app/workspaces
+      # Mount wordlists (if you have custom ones)
+      - ./wordlists:/wordlists:ro
+    environment:
+      - DEBUG_MODE=0
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - ctf-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Resource limits (adjust based on your system)
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+
+networks:
+  ctf-network:
+    driver: bridge
+
+volumes:
+  sessions:
+  workspaces:

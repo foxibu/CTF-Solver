@@ -8,6 +8,7 @@ Bridge your AI assistant to 55+ Kali Linux security tools via Model Context Prot
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/Docker-Supported-2496ED.svg?logo=docker&logoColor=white)](#-docker-deployment)
 [![Security Tools](https://img.shields.io/badge/Security_Tools-55+-green.svg)](KALI_TOOLS_INSTALLATION.md)
 [![CTF Categories](https://img.shields.io/badge/CTF_Categories-7-orange.svg)](#-ctf-categories-supported)
 
@@ -135,16 +136,58 @@ AI: *Runs nmap → gobuster → nikto → sqlmap → provides comprehensive secu
 
 ### Prerequisites
 
+**Option 1: Docker (Recommended)** 🐳
+- **Docker** & **Docker Compose** installed
+- **AI Assistant** with MCP support (Claude Desktop, 5ire, etc.)
+
+**Option 2: Native Installation**
 - **Kali Linux** (or any Linux with security tools installed)
 - **Python 3.12+**
 - **AI Assistant** with MCP support (Claude Desktop, 5ire, etc.)
 
-### Installation
+---
+
+### Option 1: Docker Installation (Recommended) 🐳
+
+**One-command setup - all tools included!**
+
+**1. Clone and start**
+```bash
+git clone https://github.com/foxibu/CTF-Solver.git
+cd CTF-Solver
+docker-compose up -d
+```
+
+That's it! The server is now running on `http://localhost:5000` with all 55+ security tools pre-installed.
+
+**2. Configure your MCP client**
+
+**For Claude Desktop** (edit `~/.config/Claude/claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "kali_mcp": {
+      "command": "python3",
+      "args": [
+        "/absolute/path/to/src/my_server/mcp_server.py",
+        "--server",
+        "http://localhost:5000/"
+      ]
+    }
+  }
+}
+```
+
+**3. Start solving CTFs!** 🎉
+
+---
+
+### Option 2: Native Installation
 
 **1. Clone the repository**
 ```bash
-git clone https://github.com/Wh0am123/MCP-Kali-Server.git
-cd MCP-Kali-Server
+git clone https://github.com/foxibu/CTF-Solver.git
+cd CTF-Solver
 ```
 
 **2. Install dependencies**
@@ -367,6 +410,81 @@ This tool works with **all major CTF platforms**:
 - Malicious hacking or attacks
 - Testing without explicit permission
 - Any illegal activities
+
+---
+
+## 🐳 Docker Deployment
+
+### Quick Start with Docker
+
+**Using Docker Compose (Recommended)**
+```bash
+# Start the server
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the server
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up -d --build
+```
+
+**Using Docker directly**
+```bash
+# Build the image
+docker build -t foxibu/ctf-solver:latest .
+
+# Run the container
+docker run -d \
+  --name ctf-solver \
+  -p 5000:5000 \
+  -v $(pwd)/sessions:/app/sessions \
+  -v $(pwd)/workspaces:/app/workspaces \
+  foxibu/ctf-solver:latest
+
+# View logs
+docker logs -f ctf-solver
+
+# Stop and remove
+docker stop ctf-solver && docker rm ctf-solver
+```
+
+### Docker Commands
+
+```bash
+# Check container health
+docker ps
+docker exec ctf-solver curl http://localhost:5000/health
+
+# Access container shell
+docker exec -it ctf-solver /bin/bash
+
+# View resource usage
+docker stats ctf-solver
+
+# Export/Import image
+docker save foxibu/ctf-solver:latest | gzip > ctf-solver.tar.gz
+docker load < ctf-solver.tar.gz
+```
+
+### Benefits of Docker Deployment
+
+✅ **Zero Configuration** - All 55+ tools pre-installed
+✅ **Cross-Platform** - Works on Windows, Mac, Linux
+✅ **Isolated Environment** - Safe malware analysis
+✅ **Version Control** - Reproducible CTF environments
+✅ **Easy Updates** - `docker-compose pull && docker-compose up -d`
+✅ **Resource Limits** - Controlled CPU/memory usage
+
+### Persistent Data
+
+The Docker setup automatically persists:
+- **Sessions**: `./sessions/` - Active analysis sessions
+- **Workspaces**: `./workspaces/` - Challenge files and results
+- **Custom wordlists**: `./wordlists/` (mount your own)
 
 ---
 
