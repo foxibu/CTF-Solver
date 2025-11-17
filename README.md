@@ -14,6 +14,8 @@ Bridge your AI assistant to 55+ Kali Linux security tools via Model Context Prot
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Architecture](#-architecture) • [Legal](#%EF%B8%8F-legal-notice)
 
+**Language**: **English** | [한국어](README_ko.md)
+
 </div>
 
 ---
