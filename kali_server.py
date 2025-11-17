@@ -1586,6 +1586,276 @@ def tesseract_ocr():
 
 
 # ============================================================================
+# ADVANCED FORENSICS AUTOMATION ENDPOINTS
+# ============================================================================
+
+@app.route("/api/forensics/auto_memory_analysis", methods=["POST"])
+def auto_memory_analysis():
+    """
+    Automated multi-stage memory forensics analysis.
+    Runs comprehensive Volatility analysis workflow automatically.
+    """
+    try:
+        params = request.json
+        dump_file = params.get("dump_file")
+        session_id = params.get("session_id")
+
+        if not all([dump_file, session_id]):
+            return jsonify({"error": "dump_file and session_id are required"}), 400
+
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Invalid session"}), 404
+
+        workspace = session["workspace"]
+        results = {}
+
+        # Phase 1: Identify OS
+        logger.info("Auto Memory Analysis Phase 1: OS Identification")
+        cmd = f"vol -f {dump_file} windows.info"
+        os_info = execute_command(cmd)
+        results["os_info"] = os_info
+
+        # Detect OS type from output
+        is_windows = "windows" in os_info.get("stdout", "").lower()
+
+        # Phase 2: Process Analysis
+        logger.info("Auto Memory Analysis Phase 2: Process Analysis")
+        if is_windows:
+            cmd = f"vol -f {dump_file} windows.pslist"
+        else:
+            cmd = f"vol -f {dump_file} linux.pslist"
+        results["processes"] = execute_command(cmd)
+
+        # Phase 3: Network Connections
+        logger.info("Auto Memory Analysis Phase 3: Network Analysis")
+        if is_windows:
+            cmd = f"vol -f {dump_file} windows.netscan"
+        else:
+            cmd = f"vol -f {dump_file} linux.netstat"
+        results["network"] = execute_command(cmd)
+
+        # Phase 4: Malware Detection
+        logger.info("Auto Memory Analysis Phase 4: Malware Detection")
+        if is_windows:
+            cmd = f"vol -f {dump_file} windows.malfind"
+            results["malfind"] = execute_command(cmd)
+
+        # Phase 5: Registry Analysis (Windows only)
+        if is_windows:
+            logger.info("Auto Memory Analysis Phase 5: Registry Analysis")
+            cmd = f"vol -f {dump_file} windows.registry.hivelist"
+            results["registry"] = execute_command(cmd)
+
+        # Phase 6: DLL Analysis
+        logger.info("Auto Memory Analysis Phase 6: DLL Analysis")
+        if is_windows:
+            cmd = f"vol -f {dump_file} windows.dlllist"
+            results["dlls"] = execute_command(cmd)
+
+        # Generate summary
+        results["summary"] = {
+            "total_phases": 6 if is_windows else 3,
+            "os_detected": "Windows" if is_windows else "Linux",
+            "analysis_complete": True,
+            "workspace": workspace
+        }
+
+        return jsonify(results)
+
+    except Exception as e:
+        logger.error(f"Auto memory analysis error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/forensics/auto_disk_analysis", methods=["POST"])
+def auto_disk_analysis():
+    """
+    Automated disk forensics analysis using SleuthKit.
+    Performs filesystem analysis, timeline generation, and file recovery.
+    """
+    try:
+        params = request.json
+        disk_image = params.get("disk_image")
+        session_id = params.get("session_id")
+
+        if not all([disk_image, session_id]):
+            return jsonify({"error": "disk_image and session_id are required"}), 400
+
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Invalid session"}), 404
+
+        workspace = session["workspace"]
+        results = {}
+
+        # Phase 1: Partition Analysis
+        logger.info("Auto Disk Analysis Phase 1: Partition Layout")
+        cmd = f"mmls {disk_image}"
+        results["partitions"] = execute_command(cmd)
+
+        # Phase 2: Filesystem Type Detection
+        logger.info("Auto Disk Analysis Phase 2: Filesystem Detection")
+        cmd = f"fsstat {disk_image}"
+        results["filesystem"] = execute_command(cmd)
+
+        # Phase 3: File Listing
+        logger.info("Auto Disk Analysis Phase 3: File Listing")
+        cmd = f"fls -r -p {disk_image}"
+        fls_result = execute_command(cmd)
+        results["files"] = fls_result
+
+        # Phase 4: Timeline Generation
+        logger.info("Auto Disk Analysis Phase 4: Timeline Generation")
+        timeline_file = os.path.join(workspace, "timeline.csv")
+        cmd = f"fls -m -r -p {disk_image} | mactime -b -d > {timeline_file}"
+        results["timeline_generated"] = execute_command(cmd)
+        results["timeline_path"] = timeline_file
+
+        # Phase 5: Deleted File Recovery
+        logger.info("Auto Disk Analysis Phase 5: Deleted File Detection")
+        cmd = f"fls -r -d -p {disk_image}"
+        results["deleted_files"] = execute_command(cmd)
+
+        # Phase 6: Hash Analysis
+        logger.info("Auto Disk Analysis Phase 6: Hash Verification")
+        cmd = f"md5deep -r {disk_image}"
+        results["hashes"] = execute_command(cmd)
+
+        # Generate summary
+        results["summary"] = {
+            "total_phases": 6,
+            "analysis_complete": True,
+            "workspace": workspace,
+            "timeline_available": os.path.exists(timeline_file)
+        }
+
+        return jsonify(results)
+
+    except Exception as e:
+        logger.error(f"Auto disk analysis error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/forensics/auto_malware_hunt", methods=["POST"])
+def auto_malware_hunt():
+    """
+    Automated malware hunting workflow.
+    Combines YARA scanning, IOC extraction, and behavioral analysis.
+    """
+    try:
+        params = request.json
+        target = params.get("target")  # file, directory, or memory dump
+        session_id = params.get("session_id")
+        scan_type = params.get("scan_type", "file")  # file, directory, memory
+
+        if not all([target, session_id]):
+            return jsonify({"error": "target and session_id are required"}), 400
+
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Invalid session"}), 404
+
+        workspace = session["workspace"]
+        results = {}
+
+        # Phase 1: YARA Scanning
+        logger.info("Auto Malware Hunt Phase 1: YARA Scanning")
+        yara_rules = "/usr/share/yara/rules"
+        if os.path.exists(yara_rules):
+            cmd = f"yara -r {yara_rules} {target}"
+            results["yara_matches"] = execute_command(cmd)
+        else:
+            results["yara_matches"] = {"warning": "YARA rules not found"}
+
+        # Phase 2: String Analysis
+        logger.info("Auto Malware Hunt Phase 2: String Extraction")
+        strings_file = os.path.join(workspace, "strings_output.txt")
+        cmd = f"strings -a -n 8 {target} > {strings_file}"
+        execute_command(cmd)
+
+        # Extract IOCs from strings
+        cmd = f"grep -E '([0-9]{{1,3}}\\.{{3}}[0-9]{{1,3}}|[a-zA-Z0-9.-]+\\.(com|net|org|exe|dll))' {strings_file}"
+        results["extracted_iocs"] = execute_command(cmd)
+        results["strings_file"] = strings_file
+
+        # Phase 3: File Type Analysis
+        logger.info("Auto Malware Hunt Phase 3: File Type Analysis")
+        cmd = f"file {target}"
+        results["file_type"] = execute_command(cmd)
+
+        # Phase 4: Entropy Analysis (packed malware detection)
+        logger.info("Auto Malware Hunt Phase 4: Entropy Analysis")
+        entropy_script = os.path.join(workspace, "entropy.py")
+        with open(entropy_script, "w") as f:
+            f.write("""
+import sys
+import math
+from collections import Counter
+
+def calculate_entropy(data):
+    if not data:
+        return 0
+    entropy = 0
+    counter = Counter(data)
+    for count in counter.values():
+        p = count / len(data)
+        entropy -= p * math.log2(p)
+    return entropy
+
+with open(sys.argv[1], 'rb') as f:
+    data = f.read()
+    entropy = calculate_entropy(data)
+    print(f"Entropy: {entropy:.4f}")
+    if entropy > 7.0:
+        print("HIGH ENTROPY - Possibly packed/encrypted")
+    elif entropy > 5.0:
+        print("MEDIUM ENTROPY")
+    else:
+        print("LOW ENTROPY")
+""")
+
+        cmd = f"python3 {entropy_script} {target}"
+        results["entropy"] = execute_command(cmd)
+
+        # Phase 5: Hash Generation
+        logger.info("Auto Malware Hunt Phase 5: Hash Generation")
+        cmd = f"md5sum {target} && sha256sum {target}"
+        results["hashes"] = execute_command(cmd)
+
+        # Phase 6: Metadata Extraction
+        logger.info("Auto Malware Hunt Phase 6: Metadata Extraction")
+        cmd = f"exiftool {target}"
+        results["metadata"] = execute_command(cmd)
+
+        # Phase 7: VirusTotal-style Summary (if binwalk available)
+        logger.info("Auto Malware Hunt Phase 7: Binary Analysis")
+        cmd = f"binwalk {target}"
+        results["binwalk"] = execute_command(cmd)
+
+        # Generate summary
+        results["summary"] = {
+            "total_phases": 7,
+            "analysis_complete": True,
+            "workspace": workspace,
+            "threat_indicators": {
+                "yara_hits": "yara_matches" in results and len(results["yara_matches"].get("stdout", "")) > 0,
+                "high_entropy": "HIGH ENTROPY" in results.get("entropy", {}).get("stdout", ""),
+                "iocs_found": len(results.get("extracted_iocs", {}).get("stdout", "")) > 0
+            }
+        }
+
+        return jsonify(results)
+
+    except Exception as e:
+        logger.error(f"Auto malware hunt error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
 # CLOUD SECURITY TOOLS ENDPOINTS
 # ============================================================================
 

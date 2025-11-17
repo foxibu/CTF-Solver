@@ -236,6 +236,58 @@ sudo apt install -y \
     photorec
 ```
 
+### 8. Advanced Forensics Automation Tools
+
+```bash
+# Install SleuthKit for disk forensics
+sudo apt install -y sleuthkit
+
+# Verify installation
+mmls -V
+fls -V
+```
+
+```bash
+# Install YARA for malware scanning
+sudo apt install -y yara
+
+# Install YARA rules repository
+cd /opt
+sudo git clone https://github.com/Yara-Rules/rules.git yara-rules
+sudo ln -s /opt/yara-rules /usr/share/yara/rules
+
+# Verify installation
+yara --version
+```
+
+```bash
+# Install md5deep/hashdeep for hash analysis
+sudo apt install -y md5deep
+
+# Verify installation
+md5deep -v
+hashdeep -V
+```
+
+```bash
+# Install additional analysis tools
+sudo apt install -y \
+    strings \
+    hexdump \
+    xxd \
+    file \
+    clamav \
+    clamav-daemon
+
+# Update ClamAV virus database
+sudo freshclam
+```
+
+**Note:** These tools enable the advanced forensics automation features:
+- `auto_memory_analysis`: Automated Volatility workflows
+- `auto_disk_analysis`: SleuthKit automation (timeline, deleted files)
+- `auto_malware_hunt`: YARA + IOC extraction + entropy analysis
+
 ---
 
 ## Cloud Security Tools

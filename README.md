@@ -4,11 +4,11 @@
 
 **AI-Powered Offensive Security Toolkit**
 
-Bridge your AI assistant to 50+ Kali Linux security tools via Model Context Protocol
+Bridge your AI assistant to 55+ Kali Linux security tools via Model Context Protocol
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Security Tools](https://img.shields.io/badge/Security_Tools-50+-green.svg)](KALI_TOOLS_INSTALLATION.md)
+[![Security Tools](https://img.shields.io/badge/Security_Tools-55+-green.svg)](KALI_TOOLS_INSTALLATION.md)
 [![CTF Categories](https://img.shields.io/badge/CTF_Categories-7-orange.svg)](#-ctf-categories-supported)
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Architecture](#-architecture) • [Legal](#%EF%B8%8F-legal-notice)
@@ -62,10 +62,12 @@ AI: *Runs nmap → gobuster → nikto → sqlmap → provides comprehensive secu
 - Tools: `hashcat`, `RsaCtfTool`, `SageMath`, `john`
 
 **🔍 Forensics** (43-70% coverage)
-- Memory dump analysis
-- Steganography detection
+- **Automated memory analysis** (Volatility workflows)
+- **Automated disk forensics** (SleuthKit workflows)
+- **Automated malware hunting** (YARA + IOC extraction)
+- Memory dump analysis & steganography detection
 - File carving & recovery
-- Tools: `Volatility3`, `binwalk`, `steghide`, `foremost`
+- Tools: `Volatility3`, `SleuthKit`, `YARA`, `binwalk`, `steghide`, `foremost`
 
 **🌐 Web Security** (90% coverage)
 - SQL injection testing
@@ -98,13 +100,13 @@ AI: *Runs nmap → gobuster → nikto → sqlmap → provides comprehensive secu
 </tr>
 </table>
 
-### 🛠️ **50+ Professional Security Tools**
+### 🛠️ **55+ Professional Security Tools**
 
 - **Network Recon**: nmap, masscan, enum4linux
 - **Web Testing**: gobuster, dirb, nikto, sqlmap, wpscan, ffuf
 - **Password Attacks**: hydra, john, hashcat
 - **Binary Analysis**: checksec, ROPgadget, radare2, pwntools, Ghidra
-- **Forensics**: Volatility3, binwalk, foremost, steghide, exiftool, tesseract
+- **Forensics**: Volatility3, SleuthKit (mmls, fls, mactime), YARA, binwalk, foremost, steghide, exiftool, tesseract, md5deep
 - **Cryptography**: RsaCtfTool, SageMath, hashcat, openssl
 - **Cloud**: AWS CLI, Pacu, s3scanner, ScoutSuite
 - **Web3**: Slither, Mythril, web3.py, solc, Ganache
@@ -115,6 +117,7 @@ AI: *Runs nmap → gobuster → nikto → sqlmap → provides comprehensive secu
 
 - **Automatic Vulnerability Detection**: AI analyzes binaries and identifies exploitable weaknesses
 - **Multi-Step Attack Chains**: Orchestrate complex exploitation workflows
+- **Automated Forensics Workflows**: Multi-stage memory analysis, disk forensics, and malware hunting
 - **Session Management**: Persistent workspaces for multi-step analysis
 - **Interactive Shells**: Bidirectional communication with running exploits
 - **Intelligent Tool Selection**: AI chooses appropriate tools based on context
@@ -210,14 +213,15 @@ python3 kali_server.py
 
 **Kali Server** (`kali_server.py`)
 - Flask HTTP API server (port 5000)
-- 70+ security tool endpoints
+- 73+ security tool endpoints
+- Advanced forensics automation (memory, disk, malware)
 - Session-based workspaces
 - Interactive shell management
 - Graceful timeout handling (180s default)
 
 **MCP Client** (`src/my_server/mcp_server.py`)
 - FastMCP protocol implementation
-- 50+ MCP tool wrappers
+- 55+ MCP tool wrappers
 - AI-guided workflow prompts
 - Resources (server status, wordlists, guides)
 
@@ -285,6 +289,37 @@ AI Assistant:
 5. Scans for network connections
 6. Extracts command line arguments
 7. Finds hidden flag in process memory
+```
+
+### Example 5: Automated Forensics Workflow
+
+```
+User: "Run automated forensics analysis on this memory dump"
+
+AI Assistant (using auto_memory_analysis):
+✓ Phase 1: OS Detection - Identified Windows 10 x64
+✓ Phase 2: Process Analysis - 47 processes found
+✓ Phase 3: Network Connections - 12 active connections
+✓ Phase 4: Malware Detection - 2 suspicious injections found
+✓ Phase 5: Registry Analysis - Persistence mechanisms detected
+✓ Phase 6: DLL Analysis - Malicious DLL identified
+
+Summary: Found malware persistence in Run key, extracted C2 server: 192.168.1.100:4444
+```
+
+```
+User: "Hunt for malware in this suspicious executable"
+
+AI Assistant (using auto_malware_hunt):
+✓ Phase 1: YARA Scanning - Matched: Trojan.Generic
+✓ Phase 2: IOC Extraction - Found 3 IPs, 5 domains, 2 registry keys
+✓ Phase 3: File Type - PE32 executable (stripped)
+✓ Phase 4: Entropy Analysis - HIGH ENTROPY (7.8) - likely packed
+✓ Phase 5: Hash Generation - MD5: a1b2c3..., SHA256: d4e5f6...
+✓ Phase 6: Metadata - Compiled: 2024-01-15, Language: C++
+✓ Phase 7: Binary Analysis - Embedded ELF detected at 0x2000
+
+Threat Assessment: High-risk packed malware with embedded payloads
 ```
 
 ---
@@ -447,9 +482,10 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📊 Statistics
 
-- **50+ Security Tools** integrated
+- **55+ Security Tools** integrated
 - **7 CTF Categories** supported
-- **70+ API Endpoints** available
+- **73+ API Endpoints** available
+- **3 Advanced Forensics Workflows** automated
 - **4 Workflow Prompts** included
 - **100+ Pages** of documentation
 

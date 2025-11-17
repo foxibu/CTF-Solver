@@ -1244,6 +1244,164 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         })
 
     # ========================================================================
+    # ADVANCED FORENSICS AUTOMATION TOOLS
+    # ========================================================================
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def auto_memory_analysis(
+        dump_file: str,
+        session_id: str
+    ) -> Dict[str, Any]:
+        """
+        Automated multi-stage memory forensics analysis using Volatility.
+
+        Performs comprehensive analysis automatically:
+        - Phase 1: OS identification (Windows/Linux)
+        - Phase 2: Process listing and analysis
+        - Phase 3: Network connections enumeration
+        - Phase 4: Malware detection (malfind)
+        - Phase 5: Registry analysis (Windows only)
+        - Phase 6: DLL analysis (Windows only)
+
+        This tool runs 3-6 Volatility plugins automatically based on OS type,
+        providing a complete memory forensics report without manual intervention.
+
+        Args:
+            dump_file: Path to memory dump file (e.g., '/path/to/memory.dmp')
+            session_id: Session ID for workspace management
+
+        Returns:
+            Comprehensive analysis results with:
+            - os_info: Operating system information
+            - processes: Running processes at time of capture
+            - network: Network connections
+            - malfind: Malware detection results
+            - registry: Registry hives (Windows)
+            - dlls: Loaded DLLs (Windows)
+            - summary: Analysis summary with threat indicators
+
+        Example:
+            auto_memory_analysis(
+                dump_file="/evidence/suspect.dmp",
+                session_id="forensics_001"
+            )
+        """
+        return kali_client.safe_post("api/forensics/auto_memory_analysis", {
+            "dump_file": dump_file,
+            "session_id": session_id
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def auto_disk_analysis(
+        disk_image: str,
+        session_id: str
+    ) -> Dict[str, Any]:
+        """
+        Automated disk forensics analysis using SleuthKit (TSK).
+
+        Performs comprehensive filesystem analysis automatically:
+        - Phase 1: Partition layout analysis (mmls)
+        - Phase 2: Filesystem type detection (fsstat)
+        - Phase 3: Complete file listing (fls)
+        - Phase 4: Timeline generation (mactime)
+        - Phase 5: Deleted file detection
+        - Phase 6: Hash verification (md5deep)
+
+        This tool automates the entire disk forensics workflow, generating
+        timelines and identifying deleted files without manual commands.
+
+        Args:
+            disk_image: Path to disk image file (e.g., '/path/to/disk.dd', '/dev/sda')
+            session_id: Session ID for workspace management
+
+        Returns:
+            Comprehensive disk analysis results with:
+            - partitions: Partition table layout
+            - filesystem: Filesystem metadata
+            - files: Complete file listing
+            - timeline_generated: Timeline creation status
+            - timeline_path: Path to generated timeline CSV
+            - deleted_files: List of deleted files
+            - hashes: File hash database
+            - summary: Analysis summary
+
+        Example:
+            auto_disk_analysis(
+                disk_image="/evidence/disk.dd",
+                session_id="forensics_002"
+            )
+        """
+        return kali_client.safe_post("api/forensics/auto_disk_analysis", {
+            "disk_image": disk_image,
+            "session_id": session_id
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def auto_malware_hunt(
+        target: str,
+        session_id: str,
+        scan_type: str = "file"
+    ) -> Dict[str, Any]:
+        """
+        Automated malware hunting and analysis workflow.
+
+        Combines multiple tools for comprehensive malware analysis:
+        - Phase 1: YARA rule scanning (signature detection)
+        - Phase 2: String extraction and IOC identification
+        - Phase 3: File type identification
+        - Phase 4: Entropy analysis (packer detection)
+        - Phase 5: Hash generation (MD5, SHA256)
+        - Phase 6: Metadata extraction (EXIF)
+        - Phase 7: Binary structure analysis (binwalk)
+
+        Automatically detects:
+        - Known malware signatures (YARA)
+        - Suspicious strings (IPs, domains, registry keys)
+        - Packed/encrypted executables (high entropy)
+        - File anomalies and embedded files
+
+        Args:
+            target: Path to file, directory, or memory dump to analyze
+            session_id: Session ID for workspace management
+            scan_type: Type of scan - 'file', 'directory', or 'memory' (default: 'file')
+
+        Returns:
+            Comprehensive malware analysis results with:
+            - yara_matches: YARA rule hits
+            - extracted_iocs: Indicators of Compromise (IPs, domains)
+            - file_type: File identification
+            - entropy: Entropy score (packer detection)
+            - hashes: MD5 and SHA256 hashes
+            - metadata: EXIF metadata
+            - binwalk: Embedded file analysis
+            - summary: Threat assessment with indicators
+
+        Example:
+            auto_malware_hunt(
+                target="/samples/suspicious.exe",
+                session_id="malware_001",
+                scan_type="file"
+            )
+        """
+        return kali_client.safe_post("api/forensics/auto_malware_hunt", {
+            "target": target,
+            "session_id": session_id,
+            "scan_type": scan_type
+        })
+
+    # ========================================================================
     # CLOUD SECURITY TOOLS
     # ========================================================================
 
