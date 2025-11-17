@@ -1,4 +1,4 @@
-# Dreamhack 고난이도 문제 해결을 위한 MCP Kali Server 고도화 방안
+# CTF platform 고난이도 문제 해결을 위한 MCP Kali Server 고도화 방안
 
 ## 🎯 현재 시스템의 한계점
 
@@ -1079,7 +1079,7 @@ def configure_burp_proxy():
 | **파일 관리** | ❌ 없음 | ✅ 업로드/다운로드/버전 관리 |
 | **자동화 수준** | 🟡 단순 명령 실행 | 🟢 워크플로우 자동 생성 |
 
-### Dreamhack 문제 대응 능력
+### CTF platform 문제 대응 능력
 
 **현재 해결 가능한 난이도**: Easy ~ Medium (웹 위주)
 **개선 후 해결 가능한 난이도**: Easy ~ Hard (Pwnable, Reversing 포함)
@@ -1120,7 +1120,7 @@ def configure_burp_proxy():
 - [ ] Heap 익스플로잇 도구 (patchelf, ld preload)
 
 ### Week 9-10: 최적화 및 테스트
-- [ ] Dreamhack 문제 테스트 (난이도별)
+- [ ] CTF platform 문제 테스트 (난이도별)
 - [ ] 성능 최적화 (캐싱, 병렬 처리)
 - [ ] 문서화 및 예제 추가
 
@@ -1170,7 +1170,7 @@ def pwnable_tutorial() -> str:
 
 ---
 
-## 🎓 사용 예시 (Dreamhack Pwnable 문제)
+## 🎓 사용 예시 (CTF platform Pwnable 문제)
 
 ### 시나리오: "basic_exploitation_001" 문제 해결
 
@@ -1200,7 +1200,7 @@ gadgets = find_rop_gadgets(session_id, "basic_exploitation_001")
 exploit_code = """
 from pwn import *
 
-p = remote('host.dreamhack.games', 12345)
+p = remote('host.CTF.games', 12345)
 elf = ELF('./basic_exploitation_001')
 
 # 오프셋: 72 (AI가 자동 계산)
@@ -1246,7 +1246,7 @@ result = run_pwntools_exploit(session_id, exploit_code)
 - **Pwntools Documentation**: https://docs.pwntools.com/
 - **Radare2 Book**: https://book.rada.re/
 - **Ghidra**: https://ghidra-sre.org/
-- **Dreamhack**: https://dreamhack.io/
+- **CTF platform**: https://CTF.io/
 - **CTF Wiki**: https://ctf-wiki.org/
 
 ---

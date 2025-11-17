@@ -1859,12 +1859,12 @@ Analyze transformation step by step
 """
 
     @mcp.prompt()
-    def dreamhack_strategy(
+    def ctf_strategy(
         challenge_type: str,
         difficulty: str = "medium"
     ) -> str:
         """
-        Generate strategy for Dreamhack CTF challenges.
+        Generate strategy for CTF challenges across various platforms (HackTheBox, PicoCTF, CTFtime, etc.).
 
         Args:
             challenge_type: Type of challenge (pwnable, reversing, web, crypto, etc.)
@@ -1872,7 +1872,7 @@ Analyze transformation step by step
         """
         strategies = {
             "pwnable": """
-## Dreamhack Pwnable Strategy
+## CTF Pwnable Strategy
 
 ### Easy Level:
 - Buffer overflow without protections
@@ -1899,7 +1899,7 @@ Analyze transformation step by step
 5. run_pwntools_exploit() - Test exploits
 """,
             "reversing": """
-## Dreamhack Reversing Strategy
+## CTF Reversing Strategy
 
 ### Easy Level:
 - Hardcoded password/flag
@@ -1923,7 +1923,7 @@ Analyze transformation step by step
 4. disassemble_binary() - Detailed analysis
 """,
             "web": """
-## Dreamhack Web Strategy
+## CTF Web Strategy
 
 ### Easy Level:
 - SQL injection
