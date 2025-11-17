@@ -450,6 +450,498 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
         """
         return kali_client.execute_command(command)
 
+    # ========================================================================
+    # SESSION MANAGEMENT TOOLS
+    # ========================================================================
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def create_analysis_session(
+        user_id: str = "mcp_client"
+    ) -> Dict[str, Any]:
+        """
+        Create a new analysis session for multi-step binary analysis or exploitation. Sessions maintain workspace, context, and history.
+
+        Args:
+            user_id: Identifier for the session owner (default: 'mcp_client')
+
+        Returns:
+            Session ID and workspace path for file operations
+        """
+        return kali_client.safe_post("api/session/create", {"user_id": user_id})
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def save_analysis_result(
+        session_id: str,
+        key: str,
+        value: str
+    ) -> Dict[str, Any]:
+        """
+        Save analysis results to session context for later retrieval. Use this to persist findings across multiple analysis steps.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            key: Context key (e.g., 'protections', 'gadgets', 'exploit_script')
+            value: Value to store (can be string, JSON, or any serializable data)
+
+        Returns:
+            Success status
+        """
+        return kali_client.safe_post(f"api/session/{session_id}/context", {
+            "key": key,
+            "value": value
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def load_analysis_results(
+        session_id: str
+    ) -> Dict[str, Any]:
+        """
+        Load all analysis results saved in the session context.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+
+        Returns:
+            All saved context data including workspace path and creation time
+        """
+        return kali_client.safe_get(f"api/session/{session_id}/context")
+
+    # ========================================================================
+    # FILE MANAGEMENT TOOLS
+    # ========================================================================
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def upload_binary(
+        session_id: str,
+        filename: str,
+        content_base64: str,
+        executable: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Upload a binary file to the session workspace for analysis. File content must be base64 encoded.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            filename: Name of the file to create (e.g., 'challenge.bin')
+            content_base64: Base64 encoded file content
+            executable: Set executable permission on the file (default: True)
+
+        Returns:
+            File path, size, and upload status
+        """
+        return kali_client.safe_post("api/file/upload", {
+            "session_id": session_id,
+            "filename": filename,
+            "content": content_base64,
+            "executable": executable
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def list_session_files(
+        session_id: str
+    ) -> Dict[str, Any]:
+        """
+        List all files in the session workspace.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+
+        Returns:
+            List of files with name, size, permissions, and modification time
+        """
+        return kali_client.safe_post("api/file/list", {"session_id": session_id})
+
+    # ========================================================================
+    # INTERACTIVE SESSION TOOLS
+    # ========================================================================
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": False
+    })
+    def start_interactive_shell(
+        session_id: str,
+        command: str
+    ) -> Dict[str, Any]:
+        """
+        Start an interactive shell session for bidirectional communication (e.g., nc, ssh, or running exploits). WARNING: Creates persistent connection.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            command: Command to execute interactively (e.g., 'nc 127.0.0.1 9000' or 'python3 exploit.py')
+
+        Returns:
+            Interactive session ID for sending input and reading output
+        """
+        return kali_client.safe_post("api/interactive/start", {
+            "session_id": session_id,
+            "command": command
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": False
+    })
+    def send_to_shell(
+        interactive_id: str,
+        text: str
+    ) -> Dict[str, Any]:
+        """
+        Send input to an interactive shell session. Use this to interact with running programs.
+
+        Args:
+            interactive_id: Interactive session ID from start_interactive_shell()
+            text: Text to send (include '\n' for newline if needed)
+
+        Returns:
+            Success status
+        """
+        return kali_client.safe_post("api/interactive/send", {
+            "interactive_id": interactive_id,
+            "text": text
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def read_shell_output(
+        interactive_id: str
+    ) -> Dict[str, Any]:
+        """
+        Read accumulated output from an interactive shell session. Output buffer is cleared after reading.
+
+        Args:
+            interactive_id: Interactive session ID from start_interactive_shell()
+
+        Returns:
+            Shell output and process alive status
+        """
+        return kali_client.safe_post("api/interactive/read", {
+            "interactive_id": interactive_id
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def close_shell(
+        interactive_id: str
+    ) -> Dict[str, Any]:
+        """
+        Close an interactive shell session and free resources.
+
+        Args:
+            interactive_id: Interactive session ID from start_interactive_shell()
+
+        Returns:
+            Success status
+        """
+        return kali_client.safe_post("api/interactive/close", {
+            "interactive_id": interactive_id
+        })
+
+    # ========================================================================
+    # BINARY ANALYSIS TOOLS (PWNABLE)
+    # ========================================================================
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def checksec_binary(
+        session_id: str,
+        binary_filename: str
+    ) -> Dict[str, Any]:
+        """
+        Analyze binary security protections (RELRO, Stack Canary, NX, PIE, Symbols). Essential first step for pwnable challenges.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            binary_filename: Filename of binary in session workspace
+
+        Returns:
+            Protection mechanisms enabled/disabled with parsed boolean values
+        """
+        session = kali_client.safe_get(f"api/session/{session_id}/context")
+        if "error" in session:
+            return session
+        workspace = session.get("workspace", "")
+        binary_path = f"{workspace}/{binary_filename}"
+
+        return kali_client.safe_post("api/tools/checksec", {"binary_path": binary_path})
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def find_rop_gadgets(
+        session_id: str,
+        binary_filename: str,
+        search_string: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Search for ROP gadgets in binary using ROPgadget. Use this to build ROP chains for NX bypass.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            binary_filename: Filename of binary in session workspace
+            search_string: Optional search filter (e.g., 'pop rdi' or 'syscall')
+
+        Returns:
+            List of gadget addresses and instructions
+        """
+        session = kali_client.safe_get(f"api/session/{session_id}/context")
+        if "error" in session:
+            return session
+        workspace = session.get("workspace", "")
+        binary_path = f"{workspace}/{binary_filename}"
+
+        return kali_client.safe_post("api/tools/ropgadget", {
+            "binary_path": binary_path,
+            "search": search_string
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def analyze_with_radare2(
+        session_id: str,
+        binary_filename: str,
+        commands: list = None
+    ) -> Dict[str, Any]:
+        """
+        Analyze binary with radare2. Default commands: analyze all, disassemble main.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            binary_filename: Filename of binary in session workspace
+            commands: List of r2 commands (default: ['aaa', 'pdf @ main']). Common commands: 'afl' (list functions), 'iz' (strings), 'pdf @ func' (disassemble)
+
+        Returns:
+            Radare2 analysis output
+        """
+        if commands is None:
+            commands = ["aaa", "pdf @ main"]
+
+        session = kali_client.safe_get(f"api/session/{session_id}/context")
+        if "error" in session:
+            return session
+        workspace = session.get("workspace", "")
+        binary_path = f"{workspace}/{binary_filename}"
+
+        return kali_client.safe_post("api/tools/radare2", {
+            "binary_path": binary_path,
+            "commands": commands
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def disassemble_binary(
+        session_id: str,
+        binary_filename: str,
+        mode: str = "disassemble"
+    ) -> Dict[str, Any]:
+        """
+        Disassemble binary with objdump. Modes: disassemble (code), headers (sections), symbols (functions/variables), all (everything).
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            binary_filename: Filename of binary in session workspace
+            mode: Analysis mode - 'disassemble', 'headers', 'symbols', or 'all'
+
+        Returns:
+            Objdump output in Intel syntax
+        """
+        session = kali_client.safe_get(f"api/session/{session_id}/context")
+        if "error" in session:
+            return session
+        workspace = session.get("workspace", "")
+        binary_path = f"{workspace}/{binary_filename}"
+
+        return kali_client.safe_post("api/tools/objdump", {
+            "binary_path": binary_path,
+            "mode": mode
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def trace_syscalls(
+        session_id: str,
+        binary_filename: str,
+        arguments: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Trace system calls with strace. Useful for understanding binary behavior and finding vulnerabilities.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            binary_filename: Filename of binary in session workspace
+            arguments: Command line arguments to pass to binary
+
+        Returns:
+            System call trace output
+        """
+        session = kali_client.safe_get(f"api/session/{session_id}/context")
+        if "error" in session:
+            return session
+        workspace = session.get("workspace", "")
+        binary_path = f"{workspace}/{binary_filename}"
+
+        return kali_client.safe_post("api/tools/strace", {
+            "binary_path": binary_path,
+            "arguments": arguments
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def trace_library_calls(
+        session_id: str,
+        binary_filename: str,
+        arguments: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Trace library calls with ltrace. Reveals functions like strcpy, malloc, printf being called.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            binary_filename: Filename of binary in session workspace
+            arguments: Command line arguments to pass to binary
+
+        Returns:
+            Library call trace output
+        """
+        session = kali_client.safe_get(f"api/session/{session_id}/context")
+        if "error" in session:
+            return session
+        workspace = session.get("workspace", "")
+        binary_path = f"{workspace}/{binary_filename}"
+
+        return kali_client.safe_post("api/tools/ltrace", {
+            "binary_path": binary_path,
+            "arguments": arguments
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def extract_strings(
+        session_id: str,
+        binary_filename: str,
+        min_length: int = 4
+    ) -> Dict[str, Any]:
+        """
+        Extract printable strings from binary. Look for flags, passwords, or interesting data.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            binary_filename: Filename of binary in session workspace
+            min_length: Minimum string length to extract (default: 4)
+
+        Returns:
+            Extracted strings
+        """
+        session = kali_client.safe_get(f"api/session/{session_id}/context")
+        if "error" in session:
+            return session
+        workspace = session.get("workspace", "")
+        binary_path = f"{workspace}/{binary_filename}"
+
+        return kali_client.safe_post("api/tools/strings", {
+            "binary_path": binary_path,
+            "min_length": min_length
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": False
+    })
+    def run_pwntools_exploit(
+        session_id: str,
+        exploit_script: str,
+        script_name: str = "exploit.py"
+    ) -> Dict[str, Any]:
+        """
+        Execute a pwntools exploit script. Script should use 'from pwn import *' and can use process() or remote().
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            exploit_script: Complete Python exploit code using pwntools
+            script_name: Filename to save script as (default: 'exploit.py')
+
+        Returns:
+            Exploit execution output including any captured flags
+        """
+        return kali_client.safe_post("api/tools/pwntools", {
+            "session_id": session_id,
+            "script": exploit_script,
+            "script_name": script_name
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def auto_detect_vulnerabilities(
+        session_id: str,
+        binary_filename: str
+    ) -> Dict[str, Any]:
+        """
+        AI-powered automatic vulnerability detection. Analyzes protections, dangerous functions, and infers potential exploits.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            binary_filename: Filename of binary in session workspace
+
+        Returns:
+            Comprehensive findings including protections, dangerous functions, interesting strings, and potential vulnerabilities with severity
+        """
+        return kali_client.safe_post("api/analyze/auto_detect", {
+            "session_id": session_id,
+            "binary_filename": binary_filename
+        })
+
     # Resources for accessing server information and common data
     @mcp.resource("kali://server/status")
     def get_server_status() -> str:
@@ -662,6 +1154,284 @@ If you have password hashes:
 ⚠️ May trigger security alerts/IDS
 ⚠️ Only test with explicit written permission
 """
+
+    @mcp.prompt()
+    def pwnable_challenge_workflow(
+        session_id: str,
+        binary_filename: str,
+        target_host: str = "",
+        target_port: int = 0
+    ) -> str:
+        """
+        Generate a comprehensive pwnable challenge solving workflow.
+
+        Args:
+            session_id: Analysis session ID
+            binary_filename: Binary file to analyze
+            target_host: Remote server host (optional)
+            target_port: Remote server port (optional)
+        """
+        return f"""# Pwnable Challenge Workflow - {binary_filename}
+
+## Phase 1: Binary Information Gathering
+1. checksec_binary(session_id="{session_id}", binary_filename="{binary_filename}")
+   - Check protection mechanisms (NX, PIE, Canary, RELRO)
+
+2. auto_detect_vulnerabilities(session_id="{session_id}", binary_filename="{binary_filename}")
+   - Automatic vulnerability detection with AI
+
+3. analyze_with_radare2(session_id="{session_id}", binary_filename="{binary_filename}",
+   commands=["aaa", "afl", "pdf @ main", "iz"])
+   - Function list, main disassembly, strings
+
+4. extract_strings(session_id="{session_id}", binary_filename="{binary_filename}")
+   - Look for flags, paths, interesting data
+
+## Phase 2: Vulnerability Analysis
+Based on auto_detect results:
+
+### If Buffer Overflow detected:
+1. Find overflow offset using cyclic pattern
+2. Check for win() function or useful gadgets
+3. trace_library_calls() to see dangerous functions
+
+### If NX enabled:
+1. find_rop_gadgets(session_id="{session_id}", binary_filename="{binary_filename}")
+   - Search for "pop rdi", "pop rsi", "ret", "syscall"
+2. Look for system@plt or execve for ROP chain
+
+### If PIE enabled:
+1. Need information leak to bypass ASLR
+2. Look for format string vulnerability
+3. Partial overwrite techniques
+
+## Phase 3: Exploit Development
+Example pwntools template:
+
+```python
+from pwn import *
+
+binary = '{binary_filename}'
+{'# Local testing' if not target_host else f'# Remote: {target_host}:{target_port}'}
+
+{'p = process("./" + binary)' if not target_host else f'p = remote("{target_host}", {target_port})'}
+elf = ELF(binary)
+
+# Calculate offset (use cyclic pattern)
+offset = 72  # TODO: Find actual offset
+
+# Build payload
+payload = b'A' * offset
+# Add ROP chain or return address here
+
+p.sendline(payload)
+p.interactive()
+```
+
+## Phase 4: Execution & Debugging
+1. run_pwntools_exploit(session_id="{session_id}", exploit_script=<code>)
+   - Test locally first
+
+2. If fails, use:
+   - trace_syscalls() to see system behavior
+   - disassemble_binary() for detailed analysis
+
+3. Adjust exploit and retry
+
+## Checklist
+- [ ] Binary protections identified
+- [ ] Vulnerability type confirmed
+- [ ] Exploit offset calculated
+- [ ] Required addresses found (libc, gadgets, etc.)
+- [ ] Payload constructed
+- [ ] Local test successful
+- [ ] Remote exploitation successful
+- [ ] Flag captured
+"""
+
+    @mcp.prompt()
+    def reversing_challenge_workflow(
+        session_id: str,
+        binary_filename: str
+    ) -> str:
+        """
+        Generate a reversing challenge solving workflow.
+
+        Args:
+            session_id: Analysis session ID
+            binary_filename: Binary file to analyze
+        """
+        return f"""# Reversing Challenge Workflow - {binary_filename}
+
+## Phase 1: Initial Reconnaissance
+1. checksec_binary(session_id="{session_id}", binary_filename="{binary_filename}")
+   - Check if stripped, packed, or obfuscated
+
+2. extract_strings(session_id="{session_id}", binary_filename="{binary_filename}")
+   - Look for hardcoded keys, flags, or hints
+
+3. Run the binary:
+   - start_interactive_shell(command="./{binary_filename}")
+   - Understand expected input/output
+
+## Phase 2: Static Analysis
+1. analyze_with_radare2(session_id="{session_id}", binary_filename="{binary_filename}",
+   commands=["aaa", "afl", "pdf @ main"])
+   - Map out program structure
+   - Identify key functions (check_password, validate, decrypt, etc.)
+
+2. disassemble_binary(session_id="{session_id}", binary_filename="{binary_filename}", mode="symbols")
+   - Find interesting function names
+
+3. Look for:
+   - Comparison operations (cmp, test, je, jne)
+   - Crypto constants (0x67452301 = MD5, etc.)
+   - XOR operations (common obfuscation)
+   - String comparisons (strcmp, strncmp)
+
+## Phase 3: Dynamic Analysis
+1. trace_syscalls(session_id="{session_id}", binary_filename="{binary_filename}")
+   - See file operations, network calls
+
+2. trace_library_calls(session_id="{session_id}", binary_filename="{binary_filename}")
+   - Identify crypto/hash functions being used
+
+3. Interactive debugging:
+   - Use gdb to set breakpoints at key functions
+   - Inspect registers and memory
+
+## Phase 4: Algorithm Reversal
+Common patterns:
+
+### Password Checking:
+```
+user_input == hardcoded_value
+→ Extract hardcoded value
+```
+
+### Simple XOR:
+```
+for (i=0; i<len; i++) output[i] = input[i] ^ key
+→ XOR encrypted flag with key
+```
+
+### Hash Comparison:
+```
+md5(input) == target_hash
+→ Crack hash or reverse algorithm
+```
+
+### Custom Encoding:
+```
+Analyze transformation step by step
+→ Write decoder script
+```
+
+## Phase 5: Solution Extraction
+1. If simple comparison: extract correct value from binary
+2. If encryption: reverse the algorithm
+3. If hash: use rainbow tables or bruteforce
+4. If complex: write keygen/decoder
+
+## Tools Checklist
+- [ ] Strings extracted and analyzed
+- [ ] Main functions disassembled
+- [ ] Algorithm identified
+- [ ] Key/flag location found
+- [ ] Reversal method determined
+- [ ] Solution verified
+"""
+
+    @mcp.prompt()
+    def dreamhack_strategy(
+        challenge_type: str,
+        difficulty: str = "medium"
+    ) -> str:
+        """
+        Generate strategy for Dreamhack CTF challenges.
+
+        Args:
+            challenge_type: Type of challenge (pwnable, reversing, web, crypto, etc.)
+            difficulty: Challenge difficulty (easy, medium, hard)
+        """
+        strategies = {
+            "pwnable": """
+## Dreamhack Pwnable Strategy
+
+### Easy Level:
+- Buffer overflow without protections
+- ret2win (jump to win function)
+- Basic ROP with system() or execve()
+
+### Medium Level:
+- Buffer overflow with Canary (need leak)
+- PIE enabled (need ASLR bypass)
+- ret2libc attacks
+- Format string vulnerabilities
+
+### Hard Level:
+- Full protections (NX+PIE+Canary+RELRO)
+- Heap exploitation (UAF, double free)
+- Advanced ROP (SROP, ret2csu)
+- Seccomp sandbox bypass
+
+### Recommended Tools:
+1. create_analysis_session() - Start fresh workspace
+2. upload_binary() - Upload challenge file
+3. auto_detect_vulnerabilities() - Quick assessment
+4. checksec_binary() + find_rop_gadgets() - Protection analysis
+5. run_pwntools_exploit() - Test exploits
+""",
+            "reversing": """
+## Dreamhack Reversing Strategy
+
+### Easy Level:
+- Hardcoded password/flag
+- Simple XOR encoding
+- strcmp comparisons
+
+### Medium Level:
+- Custom encryption algorithms
+- Anti-debugging techniques
+- Obfuscated code
+
+### Hard Level:
+- VM-based obfuscation
+- Multiple encryption layers
+- Advanced anti-analysis
+
+### Recommended Tools:
+1. extract_strings() - Find low-hanging fruit
+2. analyze_with_radare2() - Full disassembly
+3. trace_library_calls() - Identify crypto libs
+4. disassemble_binary() - Detailed analysis
+""",
+            "web": """
+## Dreamhack Web Strategy
+
+### Easy Level:
+- SQL injection
+- XSS (reflected/stored)
+- Command injection
+
+### Medium Level:
+- Blind SQLi
+- CSRF
+- LFI/RFI
+
+### Hard Level:
+- Type juggling
+- XXE
+- SSRF to internal services
+
+### Recommended Tools:
+1. gobuster_scan() - Directory enumeration
+2. sqlmap_scan() - SQL injection
+3. nikto_scan() - Vulnerability scanning
+"""
+        }
+
+        return strategies.get(challenge_type.lower(), "Unknown challenge type")
 
     return mcp
 
