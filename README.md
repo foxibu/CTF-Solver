@@ -1,4 +1,4 @@
-# 🛡️ MCP Kali Server
+# 🛡️ CTF-Solver
 
 <div align="center">
 
