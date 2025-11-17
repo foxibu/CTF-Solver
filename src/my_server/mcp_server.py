@@ -942,6 +942,522 @@ def setup_mcp_server(kali_client: KaliToolsClient) -> FastMCP:
             "binary_filename": binary_filename
         })
 
+    # ========================================================================
+    # CRYPTOGRAPHY TOOLS
+    # ========================================================================
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def hashcat_crack(
+        hash_value: str = "",
+        hash_file: str = "",
+        hash_type: str = "0",
+        wordlist: str = "/usr/share/wordlists/rockyou.txt",
+        attack_mode: str = "0",
+        additional_args: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Crack password hashes using hashcat GPU-accelerated cracking. Supports 300+ hash types.
+
+        Args:
+            hash_value: Single hash to crack (alternative to hash_file)
+            hash_file: Path to file containing hashes on Kali server
+            hash_type: Hash type mode - '0' for MD5, '100' for SHA1, '1000' for NTLM, '1400' for SHA256, '3200' for bcrypt (default: '0')
+            wordlist: Path to wordlist file (default: '/usr/share/wordlists/rockyou.txt')
+            attack_mode: Attack mode - '0' for straight, '1' for combination, '3' for brute-force (default: '0')
+            additional_args: Additional hashcat args like '--rules-file' or '--increment'
+
+        Returns:
+            Cracked passwords and cracking statistics
+        """
+        return kali_client.safe_post("api/crypto/hashcat", {
+            "hash": hash_value,
+            "hash_file": hash_file,
+            "hash_type": hash_type,
+            "wordlist": wordlist,
+            "attack_mode": attack_mode,
+            "additional_args": additional_args
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def factordb_query(
+        number: str
+    ) -> Dict[str, Any]:
+        """
+        Query FactorDB for integer factorization. Essential for RSA attacks with weak primes.
+
+        Args:
+            number: Large integer to factor (RSA modulus N)
+
+        Returns:
+            Factorization results from FactorDB
+        """
+        return kali_client.safe_post("api/crypto/factordb", {"number": number})
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def rsa_attack(
+        session_id: str,
+        n: str = "",
+        e: str = "",
+        c: str = "",
+        attack: str = "all"
+    ) -> Dict[str, Any]:
+        """
+        Perform RSA attacks using RsaCtfTool. Includes factorization, Wiener's attack, Hastad's attack, and more.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            n: RSA modulus (N)
+            e: Public exponent (e)
+            c: Ciphertext to decrypt
+            attack: Attack type - 'all', 'wiener', 'fermat', 'factordb', 'noveltyprimes' (default: 'all')
+
+        Returns:
+            Attack results including private key or plaintext if successful
+        """
+        return kali_client.safe_post("api/crypto/rsactftool", {
+            "session_id": session_id,
+            "n": n,
+            "e": e,
+            "c": c,
+            "attack": attack
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def sage_execute(
+        session_id: str,
+        script: str,
+        script_name: str = "crypto_solve.sage"
+    ) -> Dict[str, Any]:
+        """
+        Execute SageMath script for advanced cryptographic attacks (elliptic curves, lattices, number theory).
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            script: Complete SageMath script code
+            script_name: Filename to save script as (default: 'crypto_solve.sage')
+
+        Returns:
+            SageMath execution output including mathematical results
+        """
+        return kali_client.safe_post("api/crypto/sage", {
+            "session_id": session_id,
+            "script": script,
+            "script_name": script_name
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def openssl_operation(
+        operation: str,
+        args: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Perform OpenSSL cryptographic operations (encryption, decryption, key generation, certificate parsing).
+
+        Args:
+            operation: OpenSSL operation - 'enc', 'dec', 'rsa', 'genrsa', 'x509', 'dgst', etc.
+            args: Operation arguments (e.g., '-aes-256-cbc -d -in cipher.txt -out plain.txt -k password')
+
+        Returns:
+            OpenSSL command output
+        """
+        return kali_client.safe_post("api/crypto/openssl", {
+            "operation": operation,
+            "args": args
+        })
+
+    # ========================================================================
+    # FORENSICS TOOLS
+    # ========================================================================
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def volatility_analyze(
+        dump_file: str,
+        plugin: str = "windows.info",
+        additional_args: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Analyze memory dumps with Volatility 3 for malware analysis, incident response, and forensics.
+
+        Args:
+            dump_file: Path to memory dump file on Kali server
+            plugin: Volatility plugin - 'windows.info', 'windows.pslist', 'windows.netscan', 'windows.malfind', 'linux.bash', etc.
+            additional_args: Additional volatility args like '--pid 1234'
+
+        Returns:
+            Memory analysis results including processes, network connections, or malware artifacts
+        """
+        return kali_client.safe_post("api/forensics/volatility", {
+            "dump_file": dump_file,
+            "plugin": plugin,
+            "additional_args": additional_args
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def binwalk_analyze(
+        file_path: str,
+        extract: bool = False,
+        session_id: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Analyze firmware and binaries with binwalk to identify embedded files and filesystems.
+
+        Args:
+            file_path: Path to file on Kali server
+            extract: Extract found files (default: False)
+            session_id: Session ID for organizing extracted files (required if extract=True)
+
+        Returns:
+            Identified file signatures, offsets, and extracted file locations
+        """
+        return kali_client.safe_post("api/forensics/binwalk", {
+            "file_path": file_path,
+            "extract": extract,
+            "session_id": session_id
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def steghide_extract(
+        cover_file: str,
+        passphrase: str = "",
+        output_file: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Extract hidden data from images/audio using steghide steganography tool.
+
+        Args:
+            cover_file: Path to cover file (JPG, BMP, WAV, AU) on Kali server
+            passphrase: Steganography passphrase (leave empty to try without passphrase)
+            output_file: Output filename for extracted data
+
+        Returns:
+            Extraction results and hidden file contents
+        """
+        return kali_client.safe_post("api/forensics/steghide", {
+            "operation": "extract",
+            "cover_file": cover_file,
+            "passphrase": passphrase,
+            "output_file": output_file
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def foremost_carve(
+        session_id: str,
+        file_path: str,
+        types: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Carve files from disk images or corrupted data using foremost.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            file_path: Path to disk image or file on Kali server
+            types: File types to carve - 'jpg,png,pdf,doc,zip' or empty for all types
+
+        Returns:
+            Carved files location and recovery statistics
+        """
+        return kali_client.safe_post("api/forensics/foremost", {
+            "session_id": session_id,
+            "file_path": file_path,
+            "types": types
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def exiftool_analyze(
+        file_path: str
+    ) -> Dict[str, Any]:
+        """
+        Extract metadata from images, documents, and media files using exiftool.
+
+        Args:
+            file_path: Path to file on Kali server
+
+        Returns:
+            Complete metadata including GPS coordinates, camera info, creation dates, author info
+        """
+        return kali_client.safe_post("api/forensics/exiftool", {
+            "file_path": file_path
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def tesseract_ocr(
+        image_path: str,
+        lang: str = "eng"
+    ) -> Dict[str, Any]:
+        """
+        Perform OCR (Optical Character Recognition) on images using tesseract.
+
+        Args:
+            image_path: Path to image file on Kali server
+            lang: Language code - 'eng', 'fra', 'deu', 'jpn', 'kor', etc. (default: 'eng')
+
+        Returns:
+            Extracted text from image
+        """
+        return kali_client.safe_post("api/forensics/tesseract", {
+            "image_path": image_path,
+            "lang": lang
+        })
+
+    # ========================================================================
+    # CLOUD SECURITY TOOLS
+    # ========================================================================
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def aws_enumerate(
+        profile: str = "default",
+        service: str = "s3",
+        command: str = "list"
+    ) -> Dict[str, Any]:
+        """
+        Enumerate AWS resources using AWS CLI. Requires configured AWS credentials.
+
+        Args:
+            profile: AWS CLI profile name (default: 'default')
+            service: AWS service - 's3', 'ec2', 'iam', 'lambda', etc.
+            command: Command type - 'list' for listing resources
+
+        Returns:
+            Enumerated AWS resources (buckets, instances, users, etc.)
+        """
+        return kali_client.safe_post("api/cloud/aws_enumerate", {
+            "profile": profile,
+            "service": service,
+            "command": command
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def s3_bucket_scan(
+        bucket_name: str = "",
+        wordlist: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Scan S3 buckets for misconfigurations and public access.
+
+        Args:
+            bucket_name: Specific S3 bucket name to test
+            wordlist: Path to wordlist file for bucket name enumeration (alternative to bucket_name)
+
+        Returns:
+            S3 bucket accessibility and contents
+        """
+        return kali_client.safe_post("api/cloud/s3_scan", {
+            "bucket_name": bucket_name,
+            "wordlist": wordlist
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def cloud_metadata_query(
+        provider: str = "aws",
+        endpoint: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Query cloud metadata service for credentials and instance information.
+
+        Args:
+            provider: Cloud provider - 'aws', 'gcp', or 'azure'
+            endpoint: Metadata endpoint path (e.g., 'iam/security-credentials/' for AWS)
+
+        Returns:
+            Cloud metadata including potential credentials and instance info
+        """
+        return kali_client.safe_post("api/cloud/metadata", {
+            "provider": provider,
+            "endpoint": endpoint
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": False
+    })
+    def pacu_aws_exploit(
+        session_id: str,
+        module: str,
+        pacu_session: str = "default"
+    ) -> Dict[str, Any]:
+        """
+        Execute Pacu AWS exploitation framework modules. WARNING: Can modify AWS resources.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            module: Pacu module name (e.g., 'iam__enum_permissions', 's3__download_bucket')
+            pacu_session: Pacu session name (default: 'default')
+
+        Returns:
+            Pacu module execution results
+        """
+        return kali_client.safe_post("api/cloud/pacu", {
+            "session_id": session_id,
+            "module": module,
+            "pacu_session": pacu_session
+        })
+
+    # ========================================================================
+    # WEB3 & BLOCKCHAIN SECURITY TOOLS
+    # ========================================================================
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def slither_analyze(
+        contract_path: str,
+        additional_args: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Analyze Solidity smart contracts with Slither static analysis tool. Detects vulnerabilities and code issues.
+
+        Args:
+            contract_path: Path to .sol contract file on Kali server
+            additional_args: Additional slither args like '--detect reentrancy' or '--exclude-informational'
+
+        Returns:
+            Smart contract vulnerabilities, detectors results, and security findings
+        """
+        return kali_client.safe_post("api/web3/slither", {
+            "contract_path": contract_path,
+            "additional_args": additional_args
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": False
+    })
+    def mythril_analyze(
+        contract_path: str,
+        timeout: int = 300,
+        additional_args: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Analyze smart contracts with Mythril symbolic execution engine. Finds complex vulnerabilities through symbolic analysis.
+
+        Args:
+            contract_path: Path to .sol contract file on Kali server
+            timeout: Analysis timeout in seconds (default: 300)
+            additional_args: Additional mythril args like '--max-depth 10'
+
+        Returns:
+            Detected vulnerabilities with severity levels and exploit scenarios
+        """
+        return kali_client.safe_post("api/web3/mythril", {
+            "contract_path": contract_path,
+            "timeout": timeout,
+            "additional_args": additional_args
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": False
+    })
+    def web3_interact(
+        session_id: str,
+        script: str,
+        script_name: str = "web3_interact.py"
+    ) -> Dict[str, Any]:
+        """
+        Interact with blockchain networks using web3.py. WARNING: Can execute transactions and spend gas.
+
+        Args:
+            session_id: Session ID from create_analysis_session()
+            script: Complete Python script using web3.py
+            script_name: Filename to save script as (default: 'web3_interact.py')
+
+        Returns:
+            Blockchain interaction results including transaction hashes and contract responses
+        """
+        return kali_client.safe_post("api/web3/contract_interaction", {
+            "session_id": session_id,
+            "script": script,
+            "script_name": script_name
+        })
+
+    @mcp.tool(annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True
+    })
+    def solidity_compile(
+        contract_path: str,
+        optimize: bool = False,
+        output_dir: str = "/tmp/solc_output"
+    ) -> Dict[str, Any]:
+        """
+        Compile Solidity smart contracts using solc compiler.
+
+        Args:
+            contract_path: Path to .sol contract file on Kali server
+            optimize: Enable optimizer for gas efficiency (default: False)
+            output_dir: Output directory for compiled artifacts (default: '/tmp/solc_output')
+
+        Returns:
+            Compiled contract bytecode and ABI
+        """
+        return kali_client.safe_post("api/web3/solc", {
+            "contract_path": contract_path,
+            "optimize": optimize,
+            "output_dir": output_dir
+        })
+
     # Resources for accessing server information and common data
     @mcp.resource("kali://server/status")
     def get_server_status() -> str:
@@ -1432,6 +1948,587 @@ Analyze transformation step by step
         }
 
         return strategies.get(challenge_type.lower(), "Unknown challenge type")
+
+    @mcp.prompt()
+    def crypto_challenge_workflow(
+        session_id: str,
+        challenge_description: str = ""
+    ) -> str:
+        """
+        Generate a cryptography challenge solving workflow.
+
+        Args:
+            session_id: Analysis session ID
+            challenge_description: Description of the crypto challenge
+        """
+        return f"""# Cryptography Challenge Workflow
+
+## Phase 1: Problem Analysis
+1. Read challenge description carefully
+2. Identify crypto algorithm/system:
+   - RSA, AES, DES, XOR, Caesar cipher?
+   - Hash functions (MD5, SHA, bcrypt)?
+   - Custom encoding/encryption?
+
+## Phase 2: Information Gathering
+Based on algorithm type:
+
+### RSA Challenges:
+1. Extract n, e, c (modulus, exponent, ciphertext)
+2. factordb_query(number=n)
+   - Check if N is already factored
+3. rsa_attack(session_id="{session_id}", n=n, e=e, c=c, attack="all")
+   - Try Wiener, Fermat, Hastad, common modulus attacks
+
+### Hash Challenges:
+1. Identify hash type (length, format)
+   - MD5: 32 hex chars
+   - SHA1: 40 hex chars
+   - SHA256: 64 hex chars
+2. hashcat_crack(hash_value=hash, hash_type=<type>)
+   - Use appropriate hash type code
+3. john_crack(hash_file=path) as alternative
+
+### Classical Ciphers:
+1. Frequency analysis
+2. Pattern recognition
+3. Known plaintext attacks
+
+### Custom Crypto:
+1. sage_execute() for mathematical analysis
+2. Look for weaknesses:
+   - Small key space
+   - Reused keys/IVs
+   - ECB mode patterns
+   - Weak randomness
+
+## Phase 3: Tool Selection
+
+### For RSA:
+```python
+# Example RsaCtfTool usage
+session = create_analysis_session()
+result = rsa_attack(
+    session_id=session['session_id'],
+    n="<large_number>",
+    e="65537",
+    c="<ciphertext>",
+    attack="all"
+)
+```
+
+### For Hashes:
+```python
+# Hashcat for fast cracking
+hashcat_crack(
+    hash_value="5f4dcc3b5aa765d61d8327deb882cf99",
+    hash_type="0",  # MD5
+    wordlist="/usr/share/wordlists/rockyou.txt"
+)
+```
+
+### For Mathematical Attacks:
+```python
+# SageMath for number theory
+sage_script = '''
+n = <modulus>
+factors = factor(n)
+print(factors)
+'''
+sage_execute(session_id=session_id, script=sage_script)
+```
+
+## Phase 4: Common Attack Patterns
+
+### Weak RSA:
+- e = 3 with small message (cube root attack)
+- Common factors in multiple N values
+- Wiener's attack (d < N^0.25)
+
+### Hash Attacks:
+- Dictionary/wordlist attacks
+- Rainbow tables
+- Length extension (MD5, SHA1)
+
+### Block Cipher Attacks:
+- ECB penguin detection
+- Padding oracle attacks
+- IV reuse
+
+## Checklist
+- [ ] Algorithm identified
+- [ ] Parameters extracted
+- [ ] Known attacks attempted
+- [ ] Factorization checked
+- [ ] Hashes cracked
+- [ ] Custom analysis if needed
+- [ ] Flag obtained
+"""
+
+    @mcp.prompt()
+    def forensics_challenge_workflow(
+        session_id: str,
+        file_path: str = ""
+    ) -> str:
+        """
+        Generate a forensics challenge solving workflow.
+
+        Args:
+            session_id: Analysis session ID
+            file_path: Path to forensics artifact
+        """
+        return f"""# Forensics Challenge Workflow
+
+## Phase 1: File Identification
+1. Check file type:
+   ```bash
+   file {file_path}
+   xxd {file_path} | head  # Check magic bytes
+   ```
+
+2. exiftool_analyze(file_path="{file_path}")
+   - Extract metadata
+   - Look for hidden info in EXIF
+
+## Phase 2: Steganography Detection
+
+### Image Files (JPG, PNG, BMP):
+1. steghide_extract(cover_file="{file_path}")
+   - Try without password first
+   - Try common passwords: "password", "flag", "secret"
+
+2. Check LSB steganography:
+   ```python
+   from PIL import Image
+   img = Image.open("{file_path}")
+   # Extract LSB from RGB channels
+   ```
+
+3. binwalk_analyze(file_path="{file_path}", extract=True, session_id="{session_id}")
+   - Look for embedded files
+
+### Audio Files (WAV, MP3):
+1. Spectrogram analysis:
+   ```bash
+   sox audio.wav -n spectrogram
+   ```
+
+2. steghide_extract(cover_file="{file_path}")
+
+## Phase 3: File Carving & Recovery
+1. foremost_carve(session_id="{session_id}", file_path="{file_path}")
+   - Recover deleted/hidden files
+
+2. binwalk_analyze() for firmware:
+   - Extract filesystems
+   - Find embedded binaries
+
+## Phase 4: Memory Forensics
+If dealing with memory dump:
+
+1. volatility_analyze(dump_file=path, plugin="windows.info")
+   - Get system information
+
+2. volatility_analyze(dump_file=path, plugin="windows.pslist")
+   - List running processes
+
+3. volatility_analyze(dump_file=path, plugin="windows.netscan")
+   - Network connections
+
+4. volatility_analyze(dump_file=path, plugin="windows.filescan")
+   - Find interesting files
+
+5. volatility_analyze(dump_file=path, plugin="windows.cmdline")
+   - Command line arguments
+
+## Phase 5: Document Analysis
+For PDFs, Office docs:
+
+1. exiftool_analyze() - metadata
+2. binwalk_analyze() - embedded objects
+3. strings command - hidden text
+4. PDF streams analysis
+
+## Phase 6: OCR & Visual Analysis
+If flag is in image as text:
+
+1. tesseract_ocr(image_path="{file_path}", lang="eng")
+   - Extract visible text
+
+2. Check for:
+   - QR codes
+   - Barcodes
+   - Hidden patterns
+   - Color channel separation
+
+## Common Techniques
+
+### Steganography:
+- LSB encoding
+- EOF data
+- Metadata hiding
+- Whitespace encoding
+
+### File Analysis:
+- Magic byte checking
+- Entropy analysis
+- String extraction
+- Hex analysis
+
+### Memory Forensics:
+- Process analysis
+- Network artifacts
+- Registry hives
+- Cached credentials
+
+## Checklist
+- [ ] File type identified
+- [ ] Metadata extracted
+- [ ] Steganography checked
+- [ ] File carving performed
+- [ ] Embedded files extracted
+- [ ] Memory analyzed (if applicable)
+- [ ] OCR performed (if applicable)
+- [ ] Flag found
+"""
+
+    @mcp.prompt()
+    def cloud_security_workflow(
+        target_type: str = "aws",
+        access_level: str = "anonymous"
+    ) -> str:
+        """
+        Generate a cloud security testing workflow.
+
+        Args:
+            target_type: Cloud provider (aws, gcp, azure)
+            access_level: Access level (anonymous, credentials, compromised)
+        """
+        return f"""# Cloud Security Testing Workflow - {target_type.upper()}
+
+## Phase 1: Reconnaissance
+
+### AWS Enumeration:
+1. s3_bucket_scan(bucket_name=<target>)
+   - Test for public S3 buckets
+   - Common naming: company-backups, company-data, company-logs
+
+2. s3_bucket_scan(wordlist="/path/to/bucket_names.txt")
+   - Enumerate buckets from wordlist
+
+3. cloud_metadata_query(provider="aws", endpoint="")
+   - Check metadata service (SSRF exploitation)
+
+### With AWS Credentials:
+1. aws_enumerate(profile="default", service="s3", command="list")
+   - List all S3 buckets
+
+2. aws_enumerate(profile="default", service="ec2", command="list")
+   - List EC2 instances
+
+3. aws_enumerate(profile="default", service="iam", command="list")
+   - List IAM users/roles
+
+## Phase 2: Vulnerability Assessment
+
+### S3 Misconfiguration:
+- Public read/write access
+- ACL misconfigurations
+- Bucket policies allowing *
+
+### IAM Issues:
+- Overly permissive policies
+- Hardcoded credentials
+- Unused access keys
+
+### Metadata Exploitation:
+```bash
+# SSRF to metadata service
+cloud_metadata_query(provider="aws", endpoint="iam/security-credentials/")
+```
+
+## Phase 3: Exploitation (Authorized Testing Only)
+
+### With Compromised Credentials:
+1. pacu_aws_exploit(session_id=session, module="iam__enum_permissions")
+   - Enumerate IAM permissions
+
+2. pacu_aws_exploit(session_id=session, module="s3__download_bucket")
+   - Download S3 bucket contents
+
+3. pacu_aws_exploit(session_id=session, module="ec2__enum")
+   - Enumerate EC2 resources
+
+## Phase 4: Common Attack Vectors
+
+### S3 Bucket Attacks:
+1. Check for public access
+2. Test object ACLs
+3. Look for sensitive files:
+   - .git directories
+   - .env files
+   - backup files
+   - database dumps
+
+### Metadata Service (SSRF):
+```python
+# From compromised instance/SSRF
+endpoints = [
+    "iam/security-credentials/",
+    "iam/info",
+    "identity-credentials/ec2/security-credentials/ec2-instance"
+]
+
+for endpoint in endpoints:
+    result = cloud_metadata_query(provider="aws", endpoint=endpoint)
+    print(result)
+```
+
+### IAM Privilege Escalation:
+- PassRole to Lambda
+- Update assume role policy
+- Create access keys for other users
+
+## Phase 5: GCP-Specific
+
+### GCP Metadata:
+```bash
+cloud_metadata_query(
+    provider="gcp",
+    endpoint="instance/service-accounts/default/token"
+)
+```
+
+### GCP Storage:
+- Check GCS bucket permissions
+- Look for public buckets
+
+## Phase 6: Azure-Specific
+
+### Azure Metadata:
+```bash
+cloud_metadata_query(
+    provider="azure",
+    endpoint=""
+)
+```
+
+### Azure Storage:
+- Check Blob storage permissions
+- Test SAS tokens
+
+## Tools Summary
+
+### Anonymous Reconnaissance:
+- s3_bucket_scan() - Find public S3 buckets
+- cloud_metadata_query() - Metadata service
+
+### With Credentials:
+- aws_enumerate() - Resource enumeration
+- pacu_aws_exploit() - Advanced exploitation
+
+### Web Application Testing:
+- Check for SSRF to metadata service
+- Look for hardcoded credentials
+- Test IAM role assumptions
+
+## Checklist
+- [ ] Public cloud resources enumerated
+- [ ] S3/GCS/Blob storage checked
+- [ ] Metadata service tested (if applicable)
+- [ ] IAM permissions analyzed (with creds)
+- [ ] Sensitive data identified
+- [ ] Privilege escalation paths found
+- [ ] Findings documented
+"""
+
+    @mcp.prompt()
+    def web3_challenge_workflow(
+        session_id: str,
+        contract_address: str = "",
+        network: str = "mainnet"
+    ) -> str:
+        """
+        Generate a Web3/blockchain security testing workflow.
+
+        Args:
+            session_id: Analysis session ID
+            contract_address: Smart contract address
+            network: Blockchain network (mainnet, testnet, local)
+        """
+        return f"""# Web3 Smart Contract Security Workflow
+
+## Phase 1: Contract Analysis
+
+### Static Analysis:
+1. slither_analyze(contract_path="/path/to/contract.sol")
+   - Automated vulnerability detection
+   - Check for common patterns:
+     * Reentrancy
+     * Integer overflow/underflow
+     * Unchecked call return values
+     * Access control issues
+
+2. mythril_analyze(contract_path="/path/to/contract.sol", timeout=300)
+   - Symbolic execution
+   - Deep vulnerability analysis
+
+### Manual Code Review:
+Look for:
+- Unchecked external calls
+- Delegatecall to user-controlled address
+- tx.origin authentication
+- Block timestamp manipulation
+- Front-running vulnerabilities
+
+## Phase 2: Common Vulnerabilities
+
+### Reentrancy:
+```solidity
+// Vulnerable pattern
+function withdraw(uint amount) public {{
+    require(balances[msg.sender] >= amount);
+    msg.sender.call.value(amount)("");  // VULNERABLE
+    balances[msg.sender] -= amount;
+}}
+```
+
+### Integer Overflow/Underflow:
+```solidity
+// Before Solidity 0.8.0
+uint256 balance = 0;
+balance -= 1;  // Underflows to 2^256-1
+```
+
+### Access Control:
+```solidity
+// Missing modifier
+function withdraw() public {{  // Should be onlyOwner
+    msg.sender.transfer(balance);
+}}
+```
+
+## Phase 3: Dynamic Analysis
+
+### Compile Contract:
+```python
+result = solidity_compile(
+    contract_path="/path/to/contract.sol",
+    optimize=True
+)
+```
+
+### Interact with Contract:
+```python
+script = '''
+from web3 import Web3
+
+w3 = Web3(Web3.HTTPProvider('{network}'))
+contract_address = "{contract_address}"
+contract_abi = <abi_here>
+
+contract = w3.eth.contract(address=contract_address, abi=contract_abi)
+
+# Read contract state
+balance = contract.functions.balanceOf(address).call()
+print(f"Balance: {{balance}}")
+
+# Call vulnerable function
+tx = contract.functions.exploit().build_transaction({{
+    'from': attacker_address,
+    'nonce': w3.eth.get_transaction_count(attacker_address),
+    'gas': 200000,
+    'gasPrice': w3.eth.gas_price
+}})
+
+signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+'''
+
+web3_interact(session_id="{session_id}", script=script)
+```
+
+## Phase 4: Exploit Development
+
+### Reentrancy Exploit:
+```solidity
+contract Attacker {{
+    VulnerableContract target;
+
+    function attack() public {{
+        target.withdraw(1 ether);
+    }}
+
+    receive() external payable {{
+        if (address(target).balance >= 1 ether) {{
+            target.withdraw(1 ether);
+        }}
+    }}
+}}
+```
+
+### Integer Overflow:
+```solidity
+// Exploit underflow
+contract.transfer(address(0), 0);  // Balance becomes huge
+```
+
+## Phase 5: Testing Environment
+
+### Local Blockchain:
+```bash
+# Ganache for local testing
+ganache-cli --fork mainnet_url
+```
+
+### Test Exploit Locally:
+1. Deploy contract to local chain
+2. Test exploit script
+3. Verify flag capture
+4. Deploy to challenge network
+
+## Phase 6: Common CTF Patterns
+
+### Storage Manipulation:
+- Direct storage writes
+- Uninitialized storage pointers
+
+### Delegatecall Vulnerabilities:
+- Proxy contracts
+- Library calls
+
+### Blockchain Properties:
+- Block hash prediction
+- Timestamp manipulation
+- Block number requirements
+
+## Tools Checklist
+
+### Static Analysis:
+- [ ] slither_analyze() - Quick scan
+- [ ] mythril_analyze() - Deep analysis
+- [ ] Manual code review
+
+### Compilation & Deployment:
+- [ ] solidity_compile() - Get bytecode/ABI
+- [ ] web3_interact() - Deploy/interact
+
+### Exploitation:
+- [ ] Exploit contract written
+- [ ] Local testing completed
+- [ ] Remote exploitation successful
+
+## Common Vulnerability Checklist
+- [ ] Reentrancy checked
+- [ ] Integer overflow/underflow tested
+- [ ] Access control verified
+- [ ] External calls validated
+- [ ] Delegatecall usage reviewed
+- [ ] Storage layout analyzed
+- [ ] Gas optimization issues noted
+- [ ] Front-running possibilities assessed
+"""
 
     return mcp
 

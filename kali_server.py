@@ -1269,6 +1269,545 @@ def auto_detect_vulnerability():
         return jsonify({"error": str(e)}), 500
 
 
+# ============================================================================
+# CRYPTOGRAPHY TOOLS ENDPOINTS
+# ============================================================================
+
+@app.route("/api/crypto/hashcat", methods=["POST"])
+def hashcat_crack():
+    """Crack hashes using hashcat"""
+    try:
+        params = request.json
+        hash_value = params.get("hash")
+        hash_file = params.get("hash_file")
+        hash_type = params.get("hash_type", "0")  # 0 = MD5
+        wordlist = params.get("wordlist", "/usr/share/wordlists/rockyou.txt")
+        attack_mode = params.get("attack_mode", "0")  # 0 = straight
+        additional_args = params.get("additional_args", "")
+
+        if not (hash_value or hash_file):
+            return jsonify({"error": "Either hash or hash_file is required"}), 400
+
+        if hash_value:
+            # Create temporary hash file
+            hash_file = "/tmp/hashcat_hash.txt"
+            with open(hash_file, "w") as f:
+                f.write(hash_value)
+
+        command = f"hashcat -m {hash_type} -a {attack_mode} {hash_file} {wordlist} --force"
+
+        if additional_args:
+            command += f" {additional_args}"
+
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Hashcat error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/crypto/factordb", methods=["POST"])
+def factordb_query():
+    """Query FactorDB for integer factorization"""
+    try:
+        params = request.json
+        number = params.get("number")
+
+        if not number:
+            return jsonify({"error": "number is required"}), 400
+
+        # Use factordb-pycli if installed, otherwise curl
+        command = f"curl -s 'http://factordb.com/index.php?query={number}'"
+        result = execute_command(command)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"FactorDB error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/crypto/rsactftool", methods=["POST"])
+def rsactf_attack():
+    """RSA attacks using RsaCtfTool"""
+    try:
+        params = request.json
+        session_id = params.get("session_id")
+        n = params.get("n")
+        e = params.get("e")
+        c = params.get("c")
+        attack_type = params.get("attack", "all")
+
+        if not session_id:
+            return jsonify({"error": "session_id is required"}), 400
+
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Invalid session"}), 404
+
+        workspace = session["workspace"]
+
+        # Build command
+        command = f"cd {workspace} && python3 /opt/RsaCtfTool/RsaCtfTool.py"
+
+        if n:
+            command += f" -n {n}"
+        if e:
+            command += f" -e {e}"
+        if c:
+            command += f" --uncipher {c}"
+
+        command += f" --attack {attack_type}"
+
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"RsaCtfTool error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/crypto/sage", methods=["POST"])
+def sage_execute():
+    """Execute SageMath script for cryptographic analysis"""
+    try:
+        params = request.json
+        session_id = params.get("session_id")
+        script_content = params.get("script")
+        script_name = params.get("script_name", "crypto_solve.sage")
+
+        if not all([session_id, script_content]):
+            return jsonify({"error": "session_id and script are required"}), 400
+
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Invalid session"}), 404
+
+        # Save script
+        script_path = os.path.join(session["workspace"], script_name)
+        with open(script_path, "w") as f:
+            f.write(script_content)
+
+        # Execute with sage
+        command = f"cd {session['workspace']} && sage {script_name}"
+        result = execute_command(command)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"SageMath error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/crypto/openssl", methods=["POST"])
+def openssl_operation():
+    """Perform OpenSSL cryptographic operations"""
+    try:
+        params = request.json
+        operation = params.get("operation")  # enc, dec, rsa, etc.
+        args = params.get("args", "")
+
+        if not operation:
+            return jsonify({"error": "operation is required"}), 400
+
+        command = f"openssl {operation} {args}"
+        result = execute_command(command)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"OpenSSL error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# FORENSICS TOOLS ENDPOINTS
+# ============================================================================
+
+@app.route("/api/forensics/volatility", methods=["POST"])
+def volatility_analyze():
+    """Analyze memory dump with Volatility 3"""
+    try:
+        params = request.json
+        dump_file = params.get("dump_file")
+        plugin = params.get("plugin", "windows.info")
+        additional_args = params.get("additional_args", "")
+
+        if not dump_file:
+            return jsonify({"error": "dump_file is required"}), 400
+
+        command = f"vol -f {dump_file} {plugin}"
+
+        if additional_args:
+            command += f" {additional_args}"
+
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Volatility error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/forensics/binwalk", methods=["POST"])
+def binwalk_analyze():
+    """Analyze and extract files with binwalk"""
+    try:
+        params = request.json
+        file_path = params.get("file_path")
+        extract = params.get("extract", False)
+        session_id = params.get("session_id")
+
+        if not file_path:
+            return jsonify({"error": "file_path is required"}), 400
+
+        command = f"binwalk"
+
+        if extract and session_id:
+            session = session_manager.get_session(session_id)
+            if session:
+                extract_dir = os.path.join(session["workspace"], "binwalk_extracted")
+                command += f" -e --directory={extract_dir}"
+        elif extract:
+            command += " -e"
+
+        command += f" {file_path}"
+        result = execute_command(command)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Binwalk error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/forensics/steghide", methods=["POST"])
+def steghide_operation():
+    """Steganography operations with steghide"""
+    try:
+        params = request.json
+        operation = params.get("operation", "extract")  # extract or embed
+        cover_file = params.get("cover_file")
+        passphrase = params.get("passphrase", "")
+        output_file = params.get("output_file", "")
+
+        if not cover_file:
+            return jsonify({"error": "cover_file is required"}), 400
+
+        if operation == "extract":
+            command = f"steghide extract -sf {cover_file}"
+            if passphrase:
+                command += f" -p '{passphrase}'"
+            else:
+                command += " -p ''"
+            if output_file:
+                command += f" -xf {output_file}"
+        else:
+            return jsonify({"error": "Only extract operation is supported"}), 400
+
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Steghide error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/forensics/foremost", methods=["POST"])
+def foremost_carve():
+    """File carving with foremost"""
+    try:
+        params = request.json
+        file_path = params.get("file_path")
+        session_id = params.get("session_id")
+        file_types = params.get("types", "")  # e.g., "jpg,png,pdf"
+
+        if not all([file_path, session_id]):
+            return jsonify({"error": "file_path and session_id are required"}), 400
+
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Invalid session"}), 404
+
+        output_dir = os.path.join(session["workspace"], "foremost_output")
+        command = f"foremost -o {output_dir} -i {file_path}"
+
+        if file_types:
+            command += f" -t {file_types}"
+
+        result = execute_command(command)
+        result["output_directory"] = output_dir
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Foremost error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/forensics/exiftool", methods=["POST"])
+def exiftool_analyze():
+    """Extract metadata with exiftool"""
+    try:
+        params = request.json
+        file_path = params.get("file_path")
+
+        if not file_path:
+            return jsonify({"error": "file_path is required"}), 400
+
+        command = f"exiftool {file_path}"
+        result = execute_command(command)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Exiftool error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/forensics/tesseract", methods=["POST"])
+def tesseract_ocr():
+    """OCR with tesseract"""
+    try:
+        params = request.json
+        image_path = params.get("image_path")
+        lang = params.get("lang", "eng")
+
+        if not image_path:
+            return jsonify({"error": "image_path is required"}), 400
+
+        output_base = "/tmp/tesseract_output"
+        command = f"tesseract {image_path} {output_base} -l {lang}"
+
+        result = execute_command(command)
+
+        # Read the output file
+        try:
+            with open(f"{output_base}.txt", "r") as f:
+                result["ocr_text"] = f.read()
+        except:
+            pass
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Tesseract error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# CLOUD SECURITY TOOLS ENDPOINTS
+# ============================================================================
+
+@app.route("/api/cloud/aws_enumerate", methods=["POST"])
+def aws_enumerate():
+    """Enumerate AWS resources"""
+    try:
+        params = request.json
+        profile = params.get("profile", "default")
+        service = params.get("service", "s3")  # s3, ec2, iam, etc.
+        command_type = params.get("command", "list")
+
+        # Build AWS CLI command
+        if service == "s3" and command_type == "list":
+            command = f"aws s3 ls --profile {profile}"
+        elif service == "ec2" and command_type == "list":
+            command = f"aws ec2 describe-instances --profile {profile}"
+        elif service == "iam" and command_type == "list":
+            command = f"aws iam list-users --profile {profile}"
+        else:
+            return jsonify({"error": "Invalid service or command"}), 400
+
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"AWS enumerate error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/cloud/s3_scan", methods=["POST"])
+def s3_scan():
+    """Scan S3 buckets for misconfigurations"""
+    try:
+        params = request.json
+        bucket_name = params.get("bucket_name")
+        wordlist = params.get("wordlist", "")
+
+        if bucket_name:
+            # Check specific bucket
+            command = f"aws s3 ls s3://{bucket_name} --no-sign-request"
+        elif wordlist:
+            # Scan from wordlist
+            command = f"s3scanner scan --buckets-file {wordlist}"
+        else:
+            return jsonify({"error": "Either bucket_name or wordlist is required"}), 400
+
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"S3 scan error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/cloud/metadata", methods=["POST"])
+def cloud_metadata():
+    """Query cloud metadata service"""
+    try:
+        params = request.json
+        provider = params.get("provider", "aws")  # aws, gcp, azure
+        endpoint = params.get("endpoint", "")
+
+        if provider == "aws":
+            base_url = "http://169.254.169.254/latest/meta-data/"
+        elif provider == "gcp":
+            base_url = "http://metadata.google.internal/computeMetadata/v1/"
+        elif provider == "azure":
+            base_url = "http://169.254.169.254/metadata/instance?api-version=2021-02-01"
+        else:
+            return jsonify({"error": "Invalid provider"}), 400
+
+        url = base_url + endpoint
+
+        if provider == "gcp":
+            command = f"curl -H 'Metadata-Flavor: Google' {url}"
+        elif provider == "azure":
+            command = f"curl -H 'Metadata: true' {url}"
+        else:
+            command = f"curl {url}"
+
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Cloud metadata error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/cloud/pacu", methods=["POST"])
+def pacu_execute():
+    """Execute Pacu AWS exploitation framework"""
+    try:
+        params = request.json
+        session_id = params.get("session_id")
+        module = params.get("module")
+        pacu_session = params.get("pacu_session", "default")
+
+        if not all([session_id, module]):
+            return jsonify({"error": "session_id and module are required"}), 400
+
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Invalid session"}), 404
+
+        # Pacu commands
+        command = f"cd {session['workspace']} && echo 'run {module}' | pacu --session {pacu_session}"
+        result = execute_command(command)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Pacu error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# WEB3 TOOLS ENDPOINTS
+# ============================================================================
+
+@app.route("/api/web3/slither", methods=["POST"])
+def slither_analyze():
+    """Analyze smart contract with Slither"""
+    try:
+        params = request.json
+        contract_path = params.get("contract_path")
+        additional_args = params.get("additional_args", "")
+
+        if not contract_path:
+            return jsonify({"error": "contract_path is required"}), 400
+
+        command = f"slither {contract_path}"
+
+        if additional_args:
+            command += f" {additional_args}"
+
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Slither error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/web3/mythril", methods=["POST"])
+def mythril_analyze():
+    """Analyze smart contract with Mythril"""
+    try:
+        params = request.json
+        contract_path = params.get("contract_path")
+        execution_timeout = params.get("timeout", 300)
+        additional_args = params.get("additional_args", "")
+
+        if not contract_path:
+            return jsonify({"error": "contract_path is required"}), 400
+
+        command = f"myth analyze {contract_path} --execution-timeout {execution_timeout}"
+
+        if additional_args:
+            command += f" {additional_args}"
+
+        result = execute_command(command)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Mythril error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/web3/contract_interaction", methods=["POST"])
+def web3_contract_interaction():
+    """Interact with smart contract using web3.py"""
+    try:
+        params = request.json
+        session_id = params.get("session_id")
+        script_content = params.get("script")
+        script_name = params.get("script_name", "web3_interact.py")
+
+        if not all([session_id, script_content]):
+            return jsonify({"error": "session_id and script are required"}), 400
+
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Invalid session"}), 404
+
+        # Save script
+        script_path = os.path.join(session["workspace"], script_name)
+        with open(script_path, "w") as f:
+            f.write(script_content)
+
+        # Execute
+        command = f"cd {session['workspace']} && python3 {script_name}"
+        result = execute_command(command)
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Web3 interaction error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/web3/solc", methods=["POST"])
+def solidity_compile():
+    """Compile Solidity contract"""
+    try:
+        params = request.json
+        contract_path = params.get("contract_path")
+        optimize = params.get("optimize", False)
+        output_dir = params.get("output_dir", "/tmp/solc_output")
+
+        if not contract_path:
+            return jsonify({"error": "contract_path is required"}), 400
+
+        command = f"solc --bin --abi -o {output_dir}"
+
+        if optimize:
+            command += " --optimize"
+
+        command += f" {contract_path}"
+
+        result = execute_command(command)
+        result["output_directory"] = output_dir
+
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Solc error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 # Health check endpoint
 @app.route("/health", methods=["GET"])
 def health_check():
@@ -1276,16 +1815,16 @@ def health_check():
     # Check if essential tools are installed
     essential_tools = ["nmap", "gobuster", "dirb", "nikto"]
     tools_status = {}
-    
+
     for tool in essential_tools:
         try:
             result = execute_command(f"which {tool}")
             tools_status[tool] = result["success"]
         except:
             tools_status[tool] = False
-    
+
     all_essential_tools_available = all(tools_status.values())
-    
+
     return jsonify({
         "status": "healthy",
         "message": "Kali Linux Tools API Server is running",
