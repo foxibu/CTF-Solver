@@ -6,6 +6,7 @@
 
 Bridge your AI assistant to 55+ Kali Linux security tools via Model Context Protocol
 
+[![smithery badge](https://smithery.ai/badge/@atimevil/mcp-kali-server)](https://smithery.ai/server/@atimevil/mcp-kali-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Docker](https://img.shields.io/badge/Docker-Supported-2496ED.svg?logo=docker&logoColor=white)](#-docker-deployment)
