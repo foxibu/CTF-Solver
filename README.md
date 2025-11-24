@@ -11,6 +11,7 @@ Bridge your AI assistant to 55+ Kali Linux security tools via Model Context Prot
 [![Docker](https://img.shields.io/badge/Docker-Supported-2496ED.svg?logo=docker&logoColor=white)](#-docker-deployment)
 [![Security Tools](https://img.shields.io/badge/Security_Tools-55+-green.svg)](KALI_TOOLS_INSTALLATION.md)
 [![CTF Categories](https://img.shields.io/badge/CTF_Categories-7-orange.svg)](#-ctf-categories-supported)
+[![smithery badge](https://smithery.ai/badge/@atimevil/mcp-kali-server)](https://smithery.ai/server/@atimevil/mcp-kali-server)
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Architecture](#-architecture) • [Legal](#%EF%B8%8F-legal-notice)
 
