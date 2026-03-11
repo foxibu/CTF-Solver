@@ -2690,17 +2690,22 @@ ganache-cli --fork mainnet_url
 
     return mcp
 
-def create_server() -> FastMCP:
+def create_server(config: dict = None) -> FastMCP:
     """
     Factory function for Smithery deployment.
-    Reads configuration from environment variables.
+    Reads configuration from environment variables or config dict.
+
+    Args:
+        config: Optional config dict from Smithery (e.g. {"kaliServerUrl": "...", "timeout": 300})
 
     Returns:
         Configured FastMCP instance
     """
-    # Read configuration from environment variables
-    server_url = os.environ.get("KALI_SERVER_URL", DEFAULT_KALI_SERVER)
-    timeout = int(os.environ.get("KALI_REQUEST_TIMEOUT", str(DEFAULT_REQUEST_TIMEOUT)))
+    # Read configuration from config dict or environment variables
+    if config is None:
+        config = {}
+    server_url = config.get("kaliServerUrl") or os.environ.get("KALI_SERVER_URL", DEFAULT_KALI_SERVER)
+    timeout = int(config.get("timeout") or os.environ.get("KALI_REQUEST_TIMEOUT", str(DEFAULT_REQUEST_TIMEOUT)))
 
     logger.info(f"Creating Kali MCP server (Smithery mode)")
     logger.info(f"Kali API server: {server_url}")
@@ -2729,25 +2734,34 @@ def create_server() -> FastMCP:
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Run the Kali MCP Client")
-    parser.add_argument("--server", type=str, default=DEFAULT_KALI_SERVER, 
+    parser.add_argument("--server", type=str,
+                      default=os.environ.get("KALI_SERVER_URL", DEFAULT_KALI_SERVER),
                       help=f"Kali API server URL (default: {DEFAULT_KALI_SERVER})")
-    parser.add_argument("--timeout", type=int, default=DEFAULT_REQUEST_TIMEOUT,
+    parser.add_argument("--timeout", type=int,
+                      default=int(os.environ.get("KALI_REQUEST_TIMEOUT", str(DEFAULT_REQUEST_TIMEOUT))),
                       help=f"Request timeout in seconds (default: {DEFAULT_REQUEST_TIMEOUT})")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument("--transport", type=str, default="streamable-http",
+                      choices=["stdio", "streamable-http", "sse"],
+                      help="Transport protocol (default: streamable-http)")
+    parser.add_argument("--host", type=str, default="0.0.0.0",
+                      help="Host to bind to for HTTP transports (default: 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8080")),
+                      help="Port for HTTP transports (default: 8080)")
     return parser.parse_args()
 
 def main():
     """Main entry point for the MCP server."""
     args = parse_args()
-    
+
     # Configure logging based on debug flag
     if args.debug:
         logger.setLevel(logging.DEBUG)
         logger.debug("Debug logging enabled")
-    
+
     # Initialize the Kali Tools client
     kali_client = KaliToolsClient(args.server, args.timeout)
-    
+
     # Check server health and log the result
     health = kali_client.check_health()
     if "error" in health:
@@ -2761,11 +2775,16 @@ def main():
             missing_tools = [tool for tool, available in health.get("tools_status", {}).items() if not available]
             if missing_tools:
                 logger.warning(f"Missing tools: {', '.join(missing_tools)}")
-    
+
     # Set up and run the MCP server
     mcp = setup_mcp_server(kali_client)
-    logger.info("Starting Kali MCP server")
-    mcp.run()
+    logger.info(f"Starting Kali MCP server with {args.transport} transport")
+
+    if args.transport == "stdio":
+        mcp.run(transport="stdio")
+    else:
+        logger.info(f"Listening on {args.host}:{args.port}/mcp")
+        mcp.run(transport=args.transport, host=args.host, port=args.port, path="/mcp")
 
 if __name__ == "__main__":
     main()

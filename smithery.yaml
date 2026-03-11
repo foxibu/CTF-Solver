@@ -1,1 +1,31 @@
 runtime: "python"
+startCommand:
+  type: http
+  configSchema:
+    type: object
+    properties:
+      kaliServerUrl:
+        type: string
+        description: "URL of the Kali Linux API server (e.g. http://your-kali-ip:5000)"
+        default: "http://localhost:5000"
+      timeout:
+        type: integer
+        description: "Request timeout in seconds"
+        default: 300
+  exampleConfig:
+    kaliServerUrl: "http://localhost:5000"
+    timeout: 300
+  commandFunction: |-
+    (config) => ({
+      command: "python",
+      args: [
+        "src/my_server/mcp_server.py",
+        "--transport", "streamable-http",
+        "--host", "0.0.0.0",
+        "--port", "8080"
+      ],
+      env: {
+        KALI_SERVER_URL: config.kaliServerUrl || "http://localhost:5000",
+        KALI_REQUEST_TIMEOUT: String(config.timeout || 300)
+      }
+    })
